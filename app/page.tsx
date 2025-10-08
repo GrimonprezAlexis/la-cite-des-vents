@@ -61,10 +61,10 @@ export default function Home() {
                   <div className="absolute inset-0 bg-gradient-to-t from-gray-900/95 via-gray-900/60 to-transparent" />
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="container mx-auto px-4 text-center text-white">
-                      <div className="max-w-5xl mx-auto">
-                        <div className="mb-8 md:mb-12 animate-scale-in flex justify-center">
+                      <div className="max-w-5xl mx-auto flex flex-col items-center">
+                        <div className="mb-4 md:mb-6 animate-scale-in">
                           <Image
-                            src="/logo.png"
+                            src="/logo copy copy.png"
                             alt="La Cité Fleurie"
                             width={700}
                             height={467}
