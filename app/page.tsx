@@ -14,20 +14,16 @@ const restaurantImages = [
     alt: 'Pizza italienne margherita',
   },
   {
-    url: 'https://images.pexels.com/photos/262047/pexels-photo-262047.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080',
+    url: '/1.png',
     alt: 'Restaurant élégant',
   },
   {
-    url: 'https://images.pexels.com/photos/941861/pexels-photo-941861.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080',
+    url: '/2.png',
     alt: 'Cuisine française raffinée',
   },
   {
-    url: 'https://images.pexels.com/photos/67468/pexels-photo-67468.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080',
+    url: '/3.png',
     alt: 'Ambiance lounge bar',
-  },
-  {
-    url: 'https://images.pexels.com/photos/696218/pexels-photo-696218.jpeg?auto=compress&cs=tinysrgb&w=1920&h=1080',
-    alt: 'Terrasse restaurant',
   },
 ];
 
