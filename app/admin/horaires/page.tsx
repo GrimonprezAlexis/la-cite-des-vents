@@ -43,10 +43,18 @@ function AdminHorairesContent() {
 
   async function fetchHours() {
     try {
+      console.log('Fetching opening hours from Firestore...');
+
+      if (!db) {
+        throw new Error('Firebase database not initialized');
+      }
+
       const q = query(collection(db, 'opening_hours'), orderBy('display_order', 'asc'));
       const querySnapshot = await getDocs(q);
+      console.log('Query result:', querySnapshot.size, 'documents');
 
       if (querySnapshot.empty) {
+        console.log('No hours found, initializing default hours...');
         await initializeDefaultHours();
         const newSnapshot = await getDocs(q);
         const hoursData = newSnapshot.docs.map((doc) => ({
@@ -54,18 +62,21 @@ function AdminHorairesContent() {
           ...doc.data(),
         } as OpeningHour));
         setHours(hoursData);
+        console.log('Initialized hours:', hoursData.length);
       } else {
         const hoursData = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         } as OpeningHour));
         setHours(hoursData);
+        console.log('Loaded hours:', hoursData.length);
       }
-    } catch (error) {
-      console.error('Error:', error);
+    } catch (error: any) {
+      console.error('Error loading hours:', error);
+      const errorMessage = error?.message || 'Impossible de charger les horaires';
       toast({
         title: 'Erreur',
-        description: 'Impossible de charger les horaires',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
@@ -84,6 +95,7 @@ function AdminHorairesContent() {
       { day_of_week: 'Dimanche', is_open: true, open_time: '12:00', close_time: '21:00', special_note: '', display_order: 6 },
     ];
 
+    console.log('Creating default hours...');
     for (const hour of defaultHours) {
       await addDoc(collection(db, 'opening_hours'), {
         ...hour,
@@ -91,6 +103,7 @@ function AdminHorairesContent() {
         updated_at: new Date().toISOString(),
       });
     }
+    console.log('Default hours created successfully');
   }
 
   function startEdit(hour: OpeningHour) {
@@ -185,6 +198,25 @@ function AdminHorairesContent() {
               <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#d3cbc2]" />
               <p className="text-gray-600 mt-4">Chargement...</p>
             </div>
+          ) : hours.length === 0 ? (
+            <Card className="max-w-4xl">
+              <CardContent className="p-12 text-center">
+                <Clock className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">Aucun horaire trouvé</h2>
+                <p className="text-gray-600 mb-6">
+                  Vérifiez que Firebase Firestore est correctement configuré dans votre projet Firebase.
+                </p>
+                <Button
+                  onClick={() => {
+                    setLoading(true);
+                    fetchHours();
+                  }}
+                  className="bg-[#d3cbc2] hover:bg-[#b8af9f] text-gray-900"
+                >
+                  Réessayer
+                </Button>
+              </CardContent>
+            </Card>
           ) : (
             <div className="max-w-4xl space-y-3">
               {hours.map((hour, index) => (
