@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/api/firebase/admin';
 
+export const runtime = 'nodejs';
+
 export async function GET() {
   try {
     if (!adminDb) {

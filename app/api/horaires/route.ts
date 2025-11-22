@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { adminDb } from '@/lib/api/firebase/admin';
 
+export const runtime = 'nodejs';
+
 const defaultHours = [
   { dayOfWeek: 'Lundi', isOpen: true, openTime: '12:00', closeTime: '14:00', specialNote: 'Midi uniquement', order: 1 },
   { dayOfWeek: 'Mardi', isOpen: true, openTime: '12:00', closeTime: '14:00', specialNote: 'Midi uniquement', order: 2 },

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { adminDb } from '@/lib/api/firebase/admin';
 
+export const runtime = 'nodejs';
+
 export async function POST(request: Request) {
   try {
     const { name, email, phone, subject, message } = await request.json();
