@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { AdminGuard } from '@/components/admin-guard';
 import { AdminNav } from '@/components/admin-nav';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, updateDoc, doc, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, updateDoc, doc, query, orderBy, addDoc } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,11 +45,22 @@ function AdminHorairesContent() {
     try {
       const q = query(collection(db, 'opening_hours'), orderBy('display_order', 'asc'));
       const querySnapshot = await getDocs(q);
-      const hoursData = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      } as OpeningHour));
-      setHours(hoursData);
+
+      if (querySnapshot.empty) {
+        await initializeDefaultHours();
+        const newSnapshot = await getDocs(q);
+        const hoursData = newSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        } as OpeningHour));
+        setHours(hoursData);
+      } else {
+        const hoursData = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        } as OpeningHour));
+        setHours(hoursData);
+      }
     } catch (error) {
       console.error('Error:', error);
       toast({
@@ -59,6 +70,26 @@ function AdminHorairesContent() {
       });
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function initializeDefaultHours() {
+    const defaultHours = [
+      { day_of_week: 'Lundi', is_open: false, open_time: '', close_time: '', special_note: '', display_order: 0 },
+      { day_of_week: 'Mardi', is_open: true, open_time: '12:00', close_time: '22:00', special_note: '', display_order: 1 },
+      { day_of_week: 'Mercredi', is_open: true, open_time: '12:00', close_time: '22:00', special_note: '', display_order: 2 },
+      { day_of_week: 'Jeudi', is_open: true, open_time: '12:00', close_time: '22:00', special_note: '', display_order: 3 },
+      { day_of_week: 'Vendredi', is_open: true, open_time: '12:00', close_time: '23:00', special_note: '', display_order: 4 },
+      { day_of_week: 'Samedi', is_open: true, open_time: '12:00', close_time: '23:00', special_note: '', display_order: 5 },
+      { day_of_week: 'Dimanche', is_open: true, open_time: '12:00', close_time: '21:00', special_note: '', display_order: 6 },
+    ];
+
+    for (const hour of defaultHours) {
+      await addDoc(collection(db, 'opening_hours'), {
+        ...hour,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
     }
   }
 

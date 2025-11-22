@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import { AdminGuard } from '@/components/admin-guard';
 import { AdminNav } from '@/components/admin-nav';
-import { db } from '@/lib/firebase';
+import { db, storage } from '@/lib/firebase';
 import { collection, getDocs, addDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,7 +39,6 @@ function AdminMenuContent() {
   const [uploading, setUploading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
-  const storage = getStorage();
 
   const [formData, setFormData] = useState({
     title: '',
@@ -92,15 +91,30 @@ function AdminMenuContent() {
       return;
     }
 
+    const maxSize = 10 * 1024 * 1024;
+    if (formData.file.size > maxSize) {
+      toast({
+        title: 'Erreur',
+        description: 'Le fichier est trop volumineux (max 10 MB)',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setUploading(true);
 
     try {
-      const fileName = `${Date.now()}_${formData.file.name}`;
+      const sanitizedFileName = formData.file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const fileName = `${Date.now()}_${sanitizedFileName}`;
       const storagePath = `menus/${fileName}`;
       const storageRef = ref(storage, storagePath);
 
-      await uploadBytes(storageRef, formData.file);
+      console.log('Uploading file to:', storagePath);
+      const uploadResult = await uploadBytes(storageRef, formData.file);
+      console.log('Upload successful:', uploadResult);
+
       const fileUrl = await getDownloadURL(storageRef);
+      console.log('File URL obtained:', fileUrl);
 
       const newMenuItem: Omit<MenuItem, 'id'> = {
         title: formData.title,
@@ -114,6 +128,7 @@ function AdminMenuContent() {
       };
 
       await addDoc(collection(db, 'menu_items'), newMenuItem);
+      console.log('Document added to Firestore');
 
       toast({
         title: 'Succès',
@@ -123,11 +138,12 @@ function AdminMenuContent() {
       setFormData({ title: '', description: '', file: null });
       setIsDialogOpen(false);
       fetchMenuItems();
-    } catch (error) {
-      console.error('Error:', error);
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      const errorMessage = error?.message || 'Échec de l\'upload du fichier';
       toast({
         title: 'Erreur',
-        description: 'Échec de l\'upload du fichier',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
@@ -214,8 +230,12 @@ function AdminMenuContent() {
                       id="file"
                       type="file"
                       accept="application/pdf,image/*"
-                      onChange={(e) => setFormData({ ...formData, file: e.target.files?.[0] || null })}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null;
+                        setFormData({ ...formData, file });
+                      }}
                       required
+                      key={isDialogOpen ? 'dialog-open' : 'dialog-closed'}
                     />
                     <p className="text-xs text-gray-500">PDF ou image (max 10 MB)</p>
                   </div>
