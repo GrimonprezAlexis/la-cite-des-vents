@@ -1,12 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { supabase, OpeningHourType } from '@/lib/supabase';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Clock, Phone, MapPin, Calendar, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+
+interface OpeningHourType {
+  id: string;
+  dayOfWeek: string;
+  isOpen: boolean;
+  openTime: string;
+  closeTime: string;
+  specialNote?: string;
+  order: number;
+}
 
 export default function HorairesPage() {
   const [hours, setHours] = useState<OpeningHourType[]>([]);
@@ -18,13 +27,12 @@ export default function HorairesPage() {
 
   async function fetchHours() {
     try {
-      const { data, error } = await supabase
-        .from('opening_hours')
-        .select('*')
-        .order('display_order', { ascending: true });
+      const response = await fetch('/api/horaires');
+      const result = await response.json();
 
-      if (error) throw error;
-      setHours(data || []);
+      if (result.success) {
+        setHours(result.data || []);
+      }
     } catch (error) {
       console.error('Error fetching hours:', error);
     } finally {
@@ -48,14 +56,12 @@ export default function HorairesPage() {
 
   const displayHours = hours.length > 0 ? hours : defaultHours.map((h, i) => ({
     id: i.toString(),
-    day_of_week: h.day,
-    is_open: true,
-    open_time: '07:30',
-    close_time: '00:00',
-    special_note: null,
-    display_order: i + 1,
-    created_at: '',
-    updated_at: '',
+    dayOfWeek: h.day,
+    isOpen: true,
+    openTime: '07:30',
+    closeTime: '00:00',
+    specialNote: null,
+    order: i + 1,
   }));
 
   return (
@@ -102,18 +108,18 @@ export default function HorairesPage() {
                         <div className="flex items-center space-x-4">
                           <div className="w-2 h-2 bg-[#d3cbc2] rounded-full group-hover:scale-150 transition-transform"></div>
                           <span className="font-bold text-gray-900 text-xl w-36">
-                            {hour.day_of_week}
+                            {hour.dayOfWeek}
                           </span>
-                          {hour.special_note && (
+                          {hour.specialNote && (
                             <span className="text-sm text-[#d3cbc2] italic bg-[#d3cbc2]/10 px-3 py-1 rounded-full">
-                              {hour.special_note}
+                              {hour.specialNote}
                             </span>
                           )}
                         </div>
                         <div className="text-right">
-                          {hour.is_open ? (
+                          {hour.isOpen ? (
                             <span className="text-[#d3cbc2] font-bold text-xl">
-                              {formatTime(hour.open_time)} - {formatTime(hour.close_time)}
+                              {formatTime(hour.openTime)} - {formatTime(hour.closeTime)}
                             </span>
                           ) : (
                             <span className="text-red-500 font-bold text-xl">Fermé</span>

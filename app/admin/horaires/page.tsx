@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { AdminGuard } from '@/components/admin-guard';
 import { AdminNav } from '@/components/admin-nav';
-import { supabase } from '@/lib/supabase';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,12 +14,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface OpeningHour {
   id: string;
-  day_of_week: string;
-  is_open: boolean;
-  open_time: string;
-  close_time: string;
-  special_note: string;
-  display_order: number;
+  dayOfWeek: string;
+  isOpen: boolean;
+  openTime: string;
+  closeTime: string;
+  specialNote: string;
+  order: number;
 }
 
 function AdminHorairesContent() {
@@ -31,10 +30,10 @@ function AdminHorairesContent() {
   const { toast } = useToast();
 
   const [editForm, setEditForm] = useState({
-    is_open: true,
-    open_time: '',
-    close_time: '',
-    special_note: '',
+    isOpen: true,
+    openTime: '',
+    closeTime: '',
+    specialNote: '',
   });
 
   useEffect(() => {
@@ -43,14 +42,12 @@ function AdminHorairesContent() {
 
   async function fetchHours() {
     try {
-      const { data, error } = await supabase
-        .from('opening_hours')
-        .select('*')
-        .order('display_order', { ascending: true });
+      const response = await fetch('/api/horaires');
+      const result = await response.json();
 
-      if (error) throw error;
+      if (!result.success) throw new Error(result.error);
 
-      setHours(data || []);
+      setHours(result.data || []);
     } catch (error: any) {
       console.error('Error loading hours:', error);
       toast({
@@ -66,38 +63,43 @@ function AdminHorairesContent() {
   function startEdit(hour: OpeningHour) {
     setEditingId(hour.id);
     setEditForm({
-      is_open: hour.is_open,
-      open_time: hour.open_time,
-      close_time: hour.close_time,
-      special_note: hour.special_note || '',
+      isOpen: hour.isOpen,
+      openTime: hour.openTime,
+      closeTime: hour.closeTime,
+      specialNote: hour.specialNote || '',
     });
   }
 
   function cancelEdit() {
     setEditingId(null);
     setEditForm({
-      is_open: true,
-      open_time: '',
-      close_time: '',
-      special_note: '',
+      isOpen: true,
+      openTime: '',
+      closeTime: '',
+      specialNote: '',
     });
   }
 
   async function saveEdit(hourId: string) {
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('opening_hours')
-        .update({
-          is_open: editForm.is_open,
-          open_time: editForm.open_time,
-          close_time: editForm.close_time,
-          special_note: editForm.special_note,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', hourId);
+      const response = await fetch('/api/horaires', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: hourId,
+          isOpen: editForm.isOpen,
+          openTime: editForm.openTime,
+          closeTime: editForm.closeTime,
+          specialNote: editForm.specialNote,
+        }),
+      });
 
-      if (error) throw error;
+      const result = await response.json();
+
+      if (!result.success) throw new Error(result.error);
 
       toast({
         title: 'Succès',
@@ -177,7 +179,7 @@ function AdminHorairesContent() {
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
                           <h3 className="text-lg font-semibold text-gray-900">
-                            {hour.day_of_week}
+                            {hour.dayOfWeek}
                           </h3>
                           <div className="flex items-center gap-2">
                             <Button
@@ -207,26 +209,26 @@ function AdminHorairesContent() {
 
                         <div className="flex items-center gap-3">
                           <Switch
-                            checked={editForm.is_open}
+                            checked={editForm.isOpen}
                             onCheckedChange={(checked) =>
-                              setEditForm({ ...editForm, is_open: checked })
+                              setEditForm({ ...editForm, isOpen: checked })
                             }
                           />
                           <Label className="text-sm font-medium">
-                            {editForm.is_open ? 'Ouvert' : 'Fermé'}
+                            {editForm.isOpen ? 'Ouvert' : 'Fermé'}
                           </Label>
                         </div>
 
-                        {editForm.is_open && (
+                        {editForm.isOpen && (
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                               <Label htmlFor="open_time">Heure d&apos;ouverture</Label>
                               <Input
                                 id="open_time"
                                 type="time"
-                                value={editForm.open_time}
+                                value={editForm.openTime}
                                 onChange={(e) =>
-                                  setEditForm({ ...editForm, open_time: e.target.value })
+                                  setEditForm({ ...editForm, openTime: e.target.value })
                                 }
                               />
                             </div>
@@ -235,9 +237,9 @@ function AdminHorairesContent() {
                               <Input
                                 id="close_time"
                                 type="time"
-                                value={editForm.close_time}
+                                value={editForm.closeTime}
                                 onChange={(e) =>
-                                  setEditForm({ ...editForm, close_time: e.target.value })
+                                  setEditForm({ ...editForm, closeTime: e.target.value })
                                 }
                               />
                             </div>
@@ -250,9 +252,9 @@ function AdminHorairesContent() {
                             id="special_note"
                             type="text"
                             placeholder="Ex: Service midi uniquement"
-                            value={editForm.special_note}
+                            value={editForm.specialNote}
                             onChange={(e) =>
-                              setEditForm({ ...editForm, special_note: e.target.value })
+                              setEditForm({ ...editForm, specialNote: e.target.value })
                             }
                           />
                         </div>
@@ -262,9 +264,9 @@ function AdminHorairesContent() {
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
                             <h3 className="text-lg font-semibold text-gray-900">
-                              {hour.day_of_week}
+                              {hour.dayOfWeek}
                             </h3>
-                            {hour.is_open ? (
+                            {hour.isOpen ? (
                               <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">
                                 Ouvert
                               </span>
@@ -274,14 +276,14 @@ function AdminHorairesContent() {
                               </span>
                             )}
                           </div>
-                          {hour.is_open && (
+                          {hour.isOpen && (
                             <p className="text-gray-600">
-                              {hour.open_time} - {hour.close_time}
+                              {hour.openTime} - {hour.closeTime}
                             </p>
                           )}
-                          {hour.special_note && (
+                          {hour.specialNote && (
                             <p className="text-sm text-gray-500 mt-1 italic">
-                              {hour.special_note}
+                              {hour.specialNote}
                             </p>
                           )}
                         </div>
