@@ -64,11 +64,11 @@ export default function Home() {
                       <div className="max-w-5xl mx-auto flex flex-col items-center">
                         <div className="mb-4 md:mb-6 animate-scale-in">
                           <Image
-                            src="/logo copy copy.png"
+                            src="/logo_couleur.png"
                             alt="La Cité Fleurie"
                             width={700}
                             height={467}
-                            className="w-[230px] sm:w-[330px] md:w-[450px] lg:w-[600px] h-auto object-contain drop-shadow-[0_35px_60px_rgba(211,203,194,0.9)] hover:scale-105 transition-transform duration-500"
+                            className="w-[230px] sm:w-[330px] md:w-[450px] lg:w-[600px] h-auto object-contain drop-shadow-[0_35px_60px_rgba(0,0,0,0.8)] hover:scale-105 transition-transform duration-500"
                             priority
                           />
                         </div>
@@ -154,7 +154,7 @@ export default function Home() {
                 <span className="text-[#b8af9f] font-bold text-sm tracking-wide uppercase">Événements Spéciaux</span>
               </div>
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-8 leading-tight">
-                Soirées Musicales
+                Notre Restaurant
               </h2>
               <div className="flex items-start space-x-6 mb-10">
                 <div className="w-16 h-16 bg-gradient-to-br from-[#d3cbc2] to-[#b8af9f] rounded-2xl flex items-center justify-center flex-shrink-0 shadow-xl">
