@@ -64,7 +64,7 @@ export default function Home() {
                       <div className="max-w-5xl mx-auto flex flex-col items-center">
                         <div className="mb-4 md:mb-6 animate-scale-in">
                           <Image
-                            src="/logo_couleur.png"
+                            src="/ChatGPT Image 22 nov. 2025, 15_40_10.png"
                             alt="La Cité Fleurie"
                             width={700}
                             height={467}
