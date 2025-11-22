@@ -3,19 +3,18 @@
 import { useState, useEffect } from 'react';
 import { AdminGuard } from '@/components/admin-guard';
 import { AdminNav } from '@/components/admin-nav';
-import { db, storage } from '@/lib/firebase';
-import { collection, getDocs, addDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { supabase } from '@/lib/supabase';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Trash2, Upload, FileText, Loader2 } from 'lucide-react';
+import { Loader2, FileText, Trash2, Plus, Upload, ExternalLink } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -30,7 +29,7 @@ interface MenuItem {
   file_name: string;
   storage_path: string;
   display_order: number;
-  created_at: number;
+  created_at: string;
 }
 
 function AdminMenuContent() {
@@ -52,18 +51,19 @@ function AdminMenuContent() {
 
   async function fetchMenuItems() {
     try {
-      const q = query(collection(db, 'menu_items'), orderBy('display_order', 'asc'));
-      const querySnapshot = await getDocs(q);
-      const items = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      } as MenuItem));
-      setMenuItems(items);
-    } catch (error) {
-      console.error('Error:', error);
+      const { data, error } = await supabase
+        .from('menu_items')
+        .select('*')
+        .order('display_order', { ascending: true });
+
+      if (error) throw error;
+
+      setMenuItems(data || []);
+    } catch (error: any) {
+      console.error('Error loading menu items:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible de charger les éléments du menu',
+        description: error.message || 'Impossible de charger les menus',
         variant: 'destructive',
       });
     } finally {
@@ -106,29 +106,32 @@ function AdminMenuContent() {
     try {
       const sanitizedFileName = formData.file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
       const fileName = `${Date.now()}_${sanitizedFileName}`;
-      const storagePath = `menus/${fileName}`;
-      const storageRef = ref(storage, storagePath);
+      const storagePath = `${fileName}`;
 
-      console.log('Uploading file to:', storagePath);
-      const uploadResult = await uploadBytes(storageRef, formData.file);
-      console.log('Upload successful:', uploadResult);
+      const { error: uploadError } = await supabase.storage
+        .from('menus')
+        .upload(storagePath, formData.file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
 
-      const fileUrl = await getDownloadURL(storageRef);
-      console.log('File URL obtained:', fileUrl);
+      if (uploadError) throw uploadError;
 
-      const newMenuItem: Omit<MenuItem, 'id'> = {
+      const { data: urlData } = supabase.storage
+        .from('menus')
+        .getPublicUrl(storagePath);
+
+      const { error: dbError } = await supabase.from('menu_items').insert({
         title: formData.title,
         description: formData.description || '',
-        file_url: fileUrl,
+        file_url: urlData.publicUrl,
         file_type: formData.file.type,
         file_name: formData.file.name,
         storage_path: storagePath,
         display_order: menuItems.length,
-        created_at: Date.now(),
-      };
+      });
 
-      await addDoc(collection(db, 'menu_items'), newMenuItem);
-      console.log('Document added to Firestore');
+      if (dbError) throw dbError;
 
       toast({
         title: 'Succès',
@@ -140,10 +143,9 @@ function AdminMenuContent() {
       fetchMenuItems();
     } catch (error: any) {
       console.error('Upload error:', error);
-      const errorMessage = error?.message || 'Échec de l\'upload du fichier';
       toast({
         title: 'Erreur',
-        description: errorMessage,
+        description: error.message || 'Échec de l\'upload du fichier',
         variant: 'destructive',
       });
     } finally {
@@ -157,10 +159,20 @@ function AdminMenuContent() {
     }
 
     try {
-      const storageRef = ref(storage, item.storage_path);
-      await deleteObject(storageRef);
+      const { error: storageError } = await supabase.storage
+        .from('menus')
+        .remove([item.storage_path]);
 
-      await deleteDoc(doc(db, 'menu_items', item.id));
+      if (storageError) {
+        console.error('Storage deletion error:', storageError);
+      }
+
+      const { error: dbError } = await supabase
+        .from('menu_items')
+        .delete()
+        .eq('id', item.id);
+
+      if (dbError) throw dbError;
 
       toast({
         title: 'Succès',
@@ -168,47 +180,54 @@ function AdminMenuContent() {
       });
 
       fetchMenuItems();
-    } catch (error) {
-      console.error('Error:', error);
+    } catch (error: any) {
+      console.error('Delete error:', error);
       toast({
         title: 'Erreur',
-        description: 'Échec de la suppression',
+        description: error.message || 'Échec de la suppression',
         variant: 'destructive',
       });
     }
   }
 
-  const isPDF = (fileType: string) => fileType === 'application/pdf';
 
   return (
     <AdminGuard>
       <div className="min-h-screen bg-gray-50">
         <AdminNav />
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex justify-between items-center mb-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="mb-8 flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Gestion du Menu</h1>
-              <p className="text-gray-600 mt-2">Gérez vos fichiers de menu (PDF ou images)</p>
+              <div className="flex items-center gap-3 mb-2">
+                <FileText className="w-8 h-8 text-[#d3cbc2]" />
+                <h1 className="text-3xl font-bold text-gray-900">Gestion des Menus</h1>
+              </div>
+              <p className="text-gray-600">Gérez les menus du restaurant (PDF ou images)</p>
             </div>
+
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="bg-[#d3cbc2] hover:bg-[#b8af9f] text-gray-900">
-                  <Upload className="w-4 h-4 mr-2" />
-                  Ajouter un Menu
+                  <Plus className="w-4 h-4 mr-2" />
+                  Ajouter un menu
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                   <DialogTitle>Ajouter un nouveau menu</DialogTitle>
+                  <DialogDescription>
+                    Téléchargez un fichier PDF ou une image du menu
+                  </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleUpload} className="space-y-4">
+                <form onSubmit={handleUpload} className="space-y-4 mt-4">
                   <div className="space-y-2">
                     <Label htmlFor="title">Titre *</Label>
                     <Input
                       id="title"
+                      type="text"
+                      placeholder="Ex: Menu du jour"
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      placeholder="Ex: Menu Principal"
                       required
                     />
                   </div>
@@ -217,9 +236,9 @@ function AdminMenuContent() {
                     <Label htmlFor="description">Description</Label>
                     <Textarea
                       id="description"
+                      placeholder="Description optionnelle"
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      placeholder="Description optionnelle"
                       rows={3}
                     />
                   </div>
@@ -251,7 +270,10 @@ function AdminMenuContent() {
                         Upload en cours...
                       </>
                     ) : (
-                      'Ajouter'
+                      <>
+                        <Upload className="w-4 h-4 mr-2" />
+                        Télécharger
+                      </>
                     )}
                   </Button>
                 </form>
@@ -265,60 +287,61 @@ function AdminMenuContent() {
               <p className="text-gray-600 mt-4">Chargement...</p>
             </div>
           ) : menuItems.length === 0 ? (
-            <Card>
+            <Card className="max-w-4xl">
               <CardContent className="p-12 text-center">
                 <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <h2 className="text-xl font-semibold text-gray-900 mb-2">Aucun menu</h2>
-                <p className="text-gray-600">Commencez par ajouter votre premier menu</p>
+                <p className="text-gray-600 mb-6">
+                  Commencez par ajouter votre premier menu
+                </p>
+                <Button
+                  onClick={() => setIsDialogOpen(true)}
+                  className="bg-[#d3cbc2] hover:bg-[#b8af9f] text-gray-900"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Ajouter un menu
+                </Button>
               </CardContent>
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {menuItems.map((item) => (
-                <Card key={item.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                  <CardContent className="p-0">
-                    {isPDF(item.file_type) ? (
-                      <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                        <FileText className="w-16 h-16 text-gray-400" />
+                <Card key={item.id} className="hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                          {item.title}
+                        </h3>
+                        {item.description && (
+                          <p className="text-sm text-gray-600 mb-3">{item.description}</p>
+                        )}
                       </div>
-                    ) : (
-                      <div className="h-48 relative overflow-hidden bg-gray-100">
-                        <img
-                          src={item.file_url}
-                          alt={item.title}
-                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                        />
-                      </div>
-                    )}
+                    </div>
 
-                    <div className="p-4">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-1 truncate">{item.title}</h3>
-                      {item.description && (
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{item.description}</p>
-                      )}
-                      <div className="flex items-center justify-between mb-4">
-                        <p className="text-xs text-gray-500 font-medium">
-                          {isPDF(item.file_type) ? 'PDF' : 'Image'}
-                        </p>
-                        <p className="text-xs text-gray-400">
-                          {new Date(item.created_at).toLocaleDateString('fr-FR')}
-                        </p>
-                      </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+                      <FileText className="w-4 h-4" />
+                      <span className="truncate">{item.file_name}</span>
+                    </div>
 
-                      <div className="flex gap-2">
-                        <a href={item.file_url} target="_blank" rel="noopener noreferrer" className="flex-1">
-                          <Button variant="outline" size="sm" className="w-full">
-                            {isPDF(item.file_type) ? 'Télécharger' : 'Voir'}
-                          </Button>
-                        </a>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDelete(item)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => window.open(item.file_url, '_blank')}
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                      >
+                        <ExternalLink className="w-4 h-4 mr-1" />
+                        Voir
+                      </Button>
+                      <Button
+                        onClick={() => handleDelete(item)}
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>

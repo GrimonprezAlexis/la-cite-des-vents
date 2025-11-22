@@ -3,15 +3,15 @@
 import { useState, useEffect } from 'react';
 import { AdminGuard } from '@/components/admin-guard';
 import { AdminNav } from '@/components/admin-nav';
-import { db } from '@/lib/firebase';
-import { collection, getDocs, updateDoc, doc, query, orderBy, addDoc } from 'firebase/firestore';
+import { supabase } from '@/lib/supabase';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Edit, Save, X, Clock } from 'lucide-react';
+import { Loader2, Edit, Save, X, Clock, Info } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface OpeningHour {
   id: string;
@@ -43,67 +43,24 @@ function AdminHorairesContent() {
 
   async function fetchHours() {
     try {
-      console.log('Fetching opening hours from Firestore...');
+      const { data, error } = await supabase
+        .from('opening_hours')
+        .select('*')
+        .order('display_order', { ascending: true });
 
-      if (!db) {
-        throw new Error('Firebase database not initialized');
-      }
+      if (error) throw error;
 
-      const q = query(collection(db, 'opening_hours'), orderBy('display_order', 'asc'));
-      const querySnapshot = await getDocs(q);
-      console.log('Query result:', querySnapshot.size, 'documents');
-
-      if (querySnapshot.empty) {
-        console.log('No hours found, initializing default hours...');
-        await initializeDefaultHours();
-        const newSnapshot = await getDocs(q);
-        const hoursData = newSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        } as OpeningHour));
-        setHours(hoursData);
-        console.log('Initialized hours:', hoursData.length);
-      } else {
-        const hoursData = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        } as OpeningHour));
-        setHours(hoursData);
-        console.log('Loaded hours:', hoursData.length);
-      }
+      setHours(data || []);
     } catch (error: any) {
       console.error('Error loading hours:', error);
-      const errorMessage = error?.message || 'Impossible de charger les horaires';
       toast({
         title: 'Erreur',
-        description: errorMessage,
+        description: error.message || 'Impossible de charger les horaires',
         variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
-  }
-
-  async function initializeDefaultHours() {
-    const defaultHours = [
-      { day_of_week: 'Lundi', is_open: false, open_time: '', close_time: '', special_note: '', display_order: 0 },
-      { day_of_week: 'Mardi', is_open: true, open_time: '12:00', close_time: '22:00', special_note: '', display_order: 1 },
-      { day_of_week: 'Mercredi', is_open: true, open_time: '12:00', close_time: '22:00', special_note: '', display_order: 2 },
-      { day_of_week: 'Jeudi', is_open: true, open_time: '12:00', close_time: '22:00', special_note: '', display_order: 3 },
-      { day_of_week: 'Vendredi', is_open: true, open_time: '12:00', close_time: '23:00', special_note: '', display_order: 4 },
-      { day_of_week: 'Samedi', is_open: true, open_time: '12:00', close_time: '23:00', special_note: '', display_order: 5 },
-      { day_of_week: 'Dimanche', is_open: true, open_time: '12:00', close_time: '21:00', special_note: '', display_order: 6 },
-    ];
-
-    console.log('Creating default hours...');
-    for (const hour of defaultHours) {
-      await addDoc(collection(db, 'opening_hours'), {
-        ...hour,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
-    }
-    console.log('Default hours created successfully');
   }
 
   function startEdit(hour: OpeningHour) {
@@ -126,40 +83,34 @@ function AdminHorairesContent() {
     });
   }
 
-  async function handleSave(id: string) {
-    if (editForm.is_open && (!editForm.open_time || !editForm.close_time)) {
-      toast({
-        title: 'Erreur',
-        description: 'Veuillez entrer les horaires d\'ouverture et de fermeture',
-        variant: 'destructive',
-      });
-      return;
-    }
-
+  async function saveEdit(hourId: string) {
     setSaving(true);
-
     try {
-      const hourRef = doc(db, 'opening_hours', id);
-      await updateDoc(hourRef, {
-        is_open: editForm.is_open,
-        open_time: editForm.open_time || '',
-        close_time: editForm.close_time || '',
-        special_note: editForm.special_note || '',
-        updated_at: new Date().toISOString(),
-      });
+      const { error } = await supabase
+        .from('opening_hours')
+        .update({
+          is_open: editForm.is_open,
+          open_time: editForm.open_time,
+          close_time: editForm.close_time,
+          special_note: editForm.special_note,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', hourId);
+
+      if (error) throw error;
 
       toast({
         title: 'Succès',
-        description: 'Horaire mis à jour avec succès',
+        description: 'Horaires mis à jour avec succès',
       });
 
       setEditingId(null);
       fetchHours();
-    } catch (error) {
-      console.error('Error:', error);
+    } catch (error: any) {
+      console.error('Error updating hours:', error);
       toast({
         title: 'Erreur',
-        description: 'Échec de la mise à jour',
+        description: error.message || 'Échec de la mise à jour',
         variant: 'destructive',
       });
     } finally {
@@ -167,24 +118,12 @@ function AdminHorairesContent() {
     }
   }
 
-  const getDayColor = (index: number) => {
-    const colors = [
-      'border-l-blue-500',
-      'border-l-green-500',
-      'border-l-purple-500',
-      'border-l-pink-500',
-      'border-l-yellow-500',
-      'border-l-red-500',
-      'border-l-indigo-500',
-    ];
-    return colors[index % colors.length];
-  };
-
   return (
     <AdminGuard>
       <div className="min-h-screen bg-gray-50">
         <AdminNav />
-        <div className="container mx-auto px-4 py-8">
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-2">
               <Clock className="w-8 h-8 text-[#d3cbc2]" />
@@ -192,6 +131,13 @@ function AdminHorairesContent() {
             </div>
             <p className="text-gray-600">Modifiez les horaires d&apos;ouverture du restaurant</p>
           </div>
+
+          <Alert className="mb-6 bg-blue-50 border-blue-200">
+            <Info className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-800">
+              Les modifications des horaires seront immédiatement visibles sur la page publique. Vérifiez toujours vos changements après sauvegarde.
+            </AlertDescription>
+          </Alert>
 
           {loading ? (
             <div className="text-center py-12">
@@ -204,7 +150,7 @@ function AdminHorairesContent() {
                 <Clock className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <h2 className="text-xl font-semibold text-gray-900 mb-2">Aucun horaire trouvé</h2>
                 <p className="text-gray-600 mb-6">
-                  Vérifiez que Firebase Firestore est correctement configuré dans votre projet Firebase.
+                  Les horaires par défaut devraient être créés automatiquement.
                 </p>
                 <Button
                   onClick={() => {
@@ -222,140 +168,130 @@ function AdminHorairesContent() {
               {hours.map((hour, index) => (
                 <Card
                   key={hour.id}
-                  className={`overflow-hidden border-l-4 ${getDayColor(index)} hover:shadow-md transition-shadow`}
+                  className={`transition-all ${
+                    index === 0 ? 'bg-gray-100 border-gray-300' : 'hover:shadow-md'
+                  }`}
                 >
                   <CardContent className="p-6">
                     {editingId === hour.id ? (
-                      <div className="space-y-5">
+                      <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                          <h3 className="text-xl font-semibold text-gray-900">{hour.day_of_week}</h3>
-                          <div className="flex items-center space-x-3">
-                            <Label htmlFor={`status-${hour.id}`} className="text-sm font-medium">
-                              {editForm.is_open ? 'Ouvert' : 'Fermé'}
-                            </Label>
-                            <Switch
-                              id={`status-${hour.id}`}
-                              checked={editForm.is_open}
-                              onCheckedChange={(checked) =>
-                                setEditForm({ ...editForm, is_open: checked })
-                              }
-                            />
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            {hour.day_of_week}
+                          </h3>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              onClick={cancelEdit}
+                              variant="outline"
+                              size="sm"
+                              disabled={saving}
+                            >
+                              <X className="w-4 h-4 mr-1" />
+                              Annuler
+                            </Button>
+                            <Button
+                              onClick={() => saveEdit(hour.id)}
+                              size="sm"
+                              className="bg-[#d3cbc2] hover:bg-[#b8af9f] text-gray-900"
+                              disabled={saving}
+                            >
+                              {saving ? (
+                                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                              ) : (
+                                <Save className="w-4 h-4 mr-1" />
+                              )}
+                              Enregistrer
+                            </Button>
                           </div>
                         </div>
 
-                        {editForm.is_open && (
-                          <div className="bg-gray-50 p-4 rounded-lg space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <Label htmlFor={`open-${hour.id}`} className="text-sm font-medium">
-                                  Ouverture
-                                </Label>
-                                <Input
-                                  id={`open-${hour.id}`}
-                                  type="time"
-                                  value={editForm.open_time}
-                                  onChange={(e) =>
-                                    setEditForm({ ...editForm, open_time: e.target.value })
-                                  }
-                                  className="text-lg"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor={`close-${hour.id}`} className="text-sm font-medium">
-                                  Fermeture
-                                </Label>
-                                <Input
-                                  id={`close-${hour.id}`}
-                                  type="time"
-                                  value={editForm.close_time}
-                                  onChange={(e) =>
-                                    setEditForm({ ...editForm, close_time: e.target.value })
-                                  }
-                                  className="text-lg"
-                                />
-                              </div>
-                            </div>
+                        <div className="flex items-center gap-3">
+                          <Switch
+                            checked={editForm.is_open}
+                            onCheckedChange={(checked) =>
+                              setEditForm({ ...editForm, is_open: checked })
+                            }
+                          />
+                          <Label className="text-sm font-medium">
+                            {editForm.is_open ? 'Ouvert' : 'Fermé'}
+                          </Label>
+                        </div>
 
+                        {editForm.is_open && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                              <Label htmlFor={`note-${hour.id}`} className="text-sm font-medium">
-                                Note spéciale (optionnel)
-                              </Label>
+                              <Label htmlFor="open_time">Heure d&apos;ouverture</Label>
                               <Input
-                                id={`note-${hour.id}`}
-                                value={editForm.special_note}
+                                id="open_time"
+                                type="time"
+                                value={editForm.open_time}
                                 onChange={(e) =>
-                                  setEditForm({ ...editForm, special_note: e.target.value })
+                                  setEditForm({ ...editForm, open_time: e.target.value })
                                 }
-                                placeholder="Ex: Soirée musicale, Happy hour..."
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="close_time">Heure de fermeture</Label>
+                              <Input
+                                id="close_time"
+                                type="time"
+                                value={editForm.close_time}
+                                onChange={(e) =>
+                                  setEditForm({ ...editForm, close_time: e.target.value })
+                                }
                               />
                             </div>
                           </div>
                         )}
 
-                        <div className="flex gap-2 pt-2">
-                          <Button
-                            onClick={() => handleSave(hour.id)}
-                            disabled={saving}
-                            className="flex-1 bg-[#d3cbc2] hover:bg-[#b8af9f] text-gray-900"
-                          >
-                            {saving ? (
-                              <>
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                Enregistrement...
-                              </>
-                            ) : (
-                              <>
-                                <Save className="w-4 h-4 mr-2" />
-                                Enregistrer
-                              </>
-                            )}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={cancelEdit}
-                            className="px-4"
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
+                        <div className="space-y-2">
+                          <Label htmlFor="special_note">Note spéciale (optionnel)</Label>
+                          <Input
+                            id="special_note"
+                            type="text"
+                            placeholder="Ex: Service midi uniquement"
+                            value={editForm.special_note}
+                            onChange={(e) =>
+                              setEditForm({ ...editForm, special_note: e.target.value })
+                            }
+                          />
                         </div>
                       </div>
                     ) : (
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
-                          <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3 mb-2">
                             <h3 className="text-lg font-semibold text-gray-900">
                               {hour.day_of_week}
                             </h3>
-                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                              hour.is_open
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-red-100 text-red-800'
-                            }`}>
-                              {hour.is_open ? 'Ouvert' : 'Fermé'}
-                            </span>
+                            {hour.is_open ? (
+                              <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">
+                                Ouvert
+                              </span>
+                            ) : (
+                              <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded">
+                                Fermé
+                              </span>
+                            )}
                           </div>
-                          {hour.is_open ? (
-                            <div>
-                              <p className="text-[#d3cbc2] font-semibold text-lg">
-                                {hour.open_time} - {hour.close_time}
-                              </p>
-                              {hour.special_note && (
-                                <p className="text-sm text-gray-500 italic mt-1.5">
-                                  {hour.special_note}
-                                </p>
-                              )}
-                            </div>
-                          ) : (
-                            <p className="text-gray-500 font-medium">Restaurant fermé</p>
+                          {hour.is_open && (
+                            <p className="text-gray-600">
+                              {hour.open_time} - {hour.close_time}
+                            </p>
+                          )}
+                          {hour.special_note && (
+                            <p className="text-sm text-gray-500 mt-1 italic">
+                              {hour.special_note}
+                            </p>
                           )}
                         </div>
                         <Button
+                          onClick={() => startEdit(hour)}
                           variant="outline"
                           size="sm"
-                          onClick={() => startEdit(hour)}
                           className="ml-4"
                         >
-                          <Edit className="w-4 h-4 mr-2" />
+                          <Edit className="w-4 h-4 mr-1" />
                           Modifier
                         </Button>
                       </div>
@@ -365,24 +301,6 @@ function AdminHorairesContent() {
               ))}
             </div>
           )}
-
-          <Card className="mt-8 max-w-4xl bg-blue-50 border-blue-200">
-            <CardContent className="p-6">
-              <div className="flex gap-3">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 rounded-full bg-blue-200 flex items-center justify-center">
-                    <Clock className="w-4 h-4 text-blue-700" />
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-blue-900 mb-1">Informations</h3>
-                  <p className="text-blue-800 text-sm">
-                    Les modifications des horaires seront immédiatement visibles sur la page publique. Vérifiez toujours vos changements après sauvegarde.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </AdminGuard>
