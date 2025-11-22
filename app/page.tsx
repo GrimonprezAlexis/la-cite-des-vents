@@ -66,9 +66,10 @@ export default function Home() {
                           <Image
                             src="/ChatGPT Image 22 nov. 2025, 15_40_10.png"
                             alt="La Cité Fleurie"
-                            width={700}
-                            height={467}
-                            className="w-[270px] sm:w-[380px] md:w-[500px] lg:w-[650px] h-auto object-contain drop-shadow-[0_20px_40px_rgba(0,0,0,0.5)] hover:scale-105 transition-transform duration-500"
+                            width={680}
+                            height={453}
+                            className="h-auto object-contain drop-shadow-[0_20px_40px_rgba(0,0,0,0.5)] hover:scale-105 transition-transform duration-500"
+                            style={{ width: '680px', maxWidth: '90vw' }}
                             priority
                           />
                         </div>

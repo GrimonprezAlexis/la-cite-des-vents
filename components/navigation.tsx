@@ -46,17 +46,15 @@ export function Navigation() {
             href="/"
             className="flex items-center transition-all duration-500 hover:scale-105"
           >
-            <div className={`relative transition-all duration-500 ${
-              isScrolled ? 'w-32 h-10' : 'w-40 h-16'
-            }`}>
-              <Image
-                src="/ChatGPT Image 22 nov. 2025, 15_40_10.png"
-                alt="La Cité Fleurie"
-                fill
-                className="object-contain"
-                priority
-              />
-            </div>
+            <Image
+              src="/ChatGPT Image 22 nov. 2025, 15_40_10.png"
+              alt="La Cité Fleurie"
+              width={131}
+              height={87}
+              className="object-contain transition-all duration-500"
+              style={{ width: '8.2rem', height: 'auto' }}
+              priority
+            />
           </Link>
 
           <div className="hidden md:flex items-center space-x-8">
