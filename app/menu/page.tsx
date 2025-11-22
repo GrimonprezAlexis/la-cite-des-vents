@@ -1,19 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { supabase, MenuItemType } from '@/lib/supabase';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FileText, Image as ImageIcon, Download, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
-interface MenuItemType {
-  id: string;
-  title: string;
-  description?: string;
-  fileUrl?: string;
-  fileType?: string;
-  order: number;
-}
 
 export default function MenuPage() {
   const [menuItems, setMenuItems] = useState<MenuItemType[]>([]);
@@ -25,12 +17,13 @@ export default function MenuPage() {
 
   async function fetchMenuItems() {
     try {
-      const response = await fetch('/api/menu');
-      const result = await response.json();
+      const { data, error } = await supabase
+        .from('menu_items')
+        .select('*')
+        .order('display_order', { ascending: true });
 
-      if (result.success) {
-        setMenuItems(result.data || []);
-      }
+      if (error) throw error;
+      setMenuItems(data || []);
     } catch (error) {
       console.error('Error fetching menu items:', error);
     } finally {
@@ -100,16 +93,16 @@ export default function MenuPage() {
                 style={{animationDelay: `${index * 0.1}s`}}
               >
                 <CardContent className="p-0">
-                  {item.fileType && isImage(item.fileType) ? (
+                  {isImage(item.file_type) ? (
                     <div className="relative h-72 w-full overflow-hidden">
                       <img
-                        src={item.fileUrl}
+                        src={item.file_url}
                         alt={item.title}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     </div>
-                  ) : item.fileType && isPDF(item.fileType) ? (
+                  ) : isPDF(item.file_type) ? (
                     <div className="h-72 bg-gradient-to-br from-[#d3cbc2]/20 to-[#b8af9f]/20 flex items-center justify-center relative overflow-hidden">
                       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2QzY2JjMiIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30"></div>
                       <FileText className="w-24 h-24 text-[#d3cbc2] relative z-10 group-hover:scale-110 transition-transform duration-300" />
@@ -128,19 +121,18 @@ export default function MenuPage() {
                       <p className="text-gray-600 mb-4 leading-relaxed">{item.description}</p>
                     )}
 
-                    {item.fileUrl && (
-                      <a
-                        href={item.fileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block"
-                      >
-                        <Button className="w-full bg-gradient-to-r from-[#d3cbc2] to-[#b8af9f] hover:from-[#b8af9f] hover:to-[#d3cbc2] text-gray-900 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-                          <Download className="w-5 h-5 mr-2" />
-                          {item.fileType && isPDF(item.fileType) ? 'Télécharger le PDF' : 'Voir en grand'}
-                        </Button>
-                      </a>
-                    )}
+                    <a
+                      href={item.file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      download={item.file_name}
+                      className="block"
+                    >
+                      <Button className="w-full bg-gradient-to-r from-[#d3cbc2] to-[#b8af9f] hover:from-[#b8af9f] hover:to-[#d3cbc2] text-gray-900 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+                        <Download className="w-5 h-5 mr-2" />
+                        {isPDF(item.file_type) ? 'Télécharger le PDF' : 'Voir en grand'}
+                      </Button>
+                    </a>
                   </div>
                 </CardContent>
               </Card>

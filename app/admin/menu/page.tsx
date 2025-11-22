@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { AdminGuard } from '@/components/admin-guard';
 import { AdminNav } from '@/components/admin-nav';
+import { supabase } from '@/lib/supabase';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,10 +23,13 @@ import {
 interface MenuItem {
   id: string;
   title: string;
-  description?: string;
-  fileUrl?: string;
-  fileType?: string;
-  order: number;
+  description: string;
+  file_url: string;
+  file_type: string;
+  file_name: string;
+  storage_path: string;
+  display_order: number;
+  created_at: string;
 }
 
 function AdminMenuContent() {
@@ -39,7 +43,6 @@ function AdminMenuContent() {
     title: '',
     description: '',
     file: null as File | null,
-    fileUrl: '',
   });
 
   useEffect(() => {
@@ -48,12 +51,14 @@ function AdminMenuContent() {
 
   async function fetchMenuItems() {
     try {
-      const response = await fetch('/api/menu');
-      const result = await response.json();
+      const { data, error } = await supabase
+        .from('menu_items')
+        .select('*')
+        .order('display_order', { ascending: true });
 
-      if (!result.success) throw new Error(result.error);
+      if (error) throw error;
 
-      setMenuItems(result.data || []);
+      setMenuItems(data || []);
     } catch (error: any) {
       console.error('Error loading menu items:', error);
       toast({
@@ -66,17 +71,16 @@ function AdminMenuContent() {
     }
   }
 
-  async function handleFileUpload(file: File): Promise<string> {
-    const { storage } = await import('@/lib/api/firebase/config');
-    const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
-
-    const storageRef = ref(storage, `menus/${Date.now()}_${file.name}`);
-    await uploadBytes(storageRef, file);
-    return await getDownloadURL(storageRef);
-  }
-
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
+    if (!formData.file) {
+      toast({
+        title: 'Erreur',
+        description: 'Veuillez sélectionner un fichier',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     if (!formData.title.trim()) {
       toast({
@@ -87,48 +91,61 @@ function AdminMenuContent() {
       return;
     }
 
+    const maxSize = 10 * 1024 * 1024;
+    if (formData.file.size > maxSize) {
+      toast({
+        title: 'Erreur',
+        description: 'Le fichier est trop volumineux (max 10 MB)',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setUploading(true);
 
     try {
-      let fileUrl = formData.fileUrl;
-      let fileType = '';
+      const sanitizedFileName = formData.file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const fileName = `${Date.now()}_${sanitizedFileName}`;
+      const storagePath = `${fileName}`;
 
-      if (formData.file) {
-        fileUrl = await handleFileUpload(formData.file);
-        fileType = formData.file.type;
-      }
+      const { error: uploadError } = await supabase.storage
+        .from('menus')
+        .upload(storagePath, formData.file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
 
-      const response = await fetch('/api/menu', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: formData.title,
-          description: formData.description || '',
-          fileUrl: fileUrl || null,
-          fileType: fileType || null,
-          order: menuItems.length,
-        }),
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('menus')
+        .getPublicUrl(storagePath);
+
+      const { error: dbError } = await supabase.from('menu_items').insert({
+        title: formData.title,
+        description: formData.description || '',
+        file_url: urlData.publicUrl,
+        file_type: formData.file.type,
+        file_name: formData.file.name,
+        storage_path: storagePath,
+        display_order: menuItems.length,
       });
 
-      const result = await response.json();
-
-      if (!result.success) throw new Error(result.error);
+      if (dbError) throw dbError;
 
       toast({
         title: 'Succès',
         description: 'Menu ajouté avec succès',
       });
 
-      setFormData({ title: '', description: '', file: null, fileUrl: '' });
+      setFormData({ title: '', description: '', file: null });
       setIsDialogOpen(false);
       fetchMenuItems();
     } catch (error: any) {
       console.error('Upload error:', error);
       toast({
         title: 'Erreur',
-        description: error.message || 'Échec de l\'ajout du menu',
+        description: error.message || 'Échec de l\'upload du fichier',
         variant: 'destructive',
       });
     } finally {
@@ -142,25 +159,20 @@ function AdminMenuContent() {
     }
 
     try {
-      if (item.fileUrl) {
-        const { storage } = await import('@/lib/api/firebase/config');
-        const { ref, deleteObject } = await import('firebase/storage');
+      const { error: storageError } = await supabase.storage
+        .from('menus')
+        .remove([item.storage_path]);
 
-        try {
-          const fileRef = ref(storage, item.fileUrl);
-          await deleteObject(fileRef);
-        } catch (storageError) {
-          console.warn('Error deleting file from storage:', storageError);
-        }
+      if (storageError) {
+        console.error('Storage deletion error:', storageError);
       }
 
-      const response = await fetch(`/api/menu?id=${item.id}`, {
-        method: 'DELETE',
-      });
+      const { error: dbError } = await supabase
+        .from('menu_items')
+        .delete()
+        .eq('id', item.id);
 
-      const result = await response.json();
-
-      if (!result.success) throw new Error(result.error);
+      if (dbError) throw dbError;
 
       toast({
         title: 'Succès',
@@ -232,33 +244,19 @@ function AdminMenuContent() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="file">Fichier (PDF ou Image)</Label>
+                    <Label htmlFor="file">Fichier (PDF ou Image) *</Label>
                     <Input
                       id="file"
                       type="file"
-                      accept=".pdf,image/*"
+                      accept="application/pdf,image/*"
                       onChange={(e) => {
                         const file = e.target.files?.[0] || null;
                         setFormData({ ...formData, file });
                       }}
+                      required
+                      key={isDialogOpen ? 'dialog-open' : 'dialog-closed'}
                     />
-                    <p className="text-xs text-gray-500">
-                      Formats acceptés: PDF, JPG, PNG (Max 10MB)
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="fileUrl">Ou URL du fichier</Label>
-                    <Input
-                      id="fileUrl"
-                      type="url"
-                      placeholder="https://example.com/menu.pdf"
-                      value={formData.fileUrl}
-                      onChange={(e) => setFormData({ ...formData, fileUrl: e.target.value })}
-                    />
-                    <p className="text-xs text-gray-500">
-                      Vous pouvez soit télécharger un fichier, soit fournir une URL
-                    </p>
+                    <p className="text-xs text-gray-500">PDF ou image (max 10 MB)</p>
                   </div>
 
                   <Button
@@ -321,25 +319,21 @@ function AdminMenuContent() {
                       </div>
                     </div>
 
-                    {item.fileUrl && (
-                      <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-                        <FileText className="w-4 h-4" />
-                        <span className="truncate">Fichier disponible</span>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+                      <FileText className="w-4 h-4" />
+                      <span className="truncate">{item.file_name}</span>
+                    </div>
 
                     <div className="flex gap-2">
-                      {item.fileUrl && (
-                        <Button
-                          onClick={() => window.open(item.fileUrl, '_blank')}
-                          variant="outline"
-                          size="sm"
-                          className="flex-1"
-                        >
-                          <ExternalLink className="w-4 h-4 mr-1" />
-                          Voir
-                        </Button>
-                      )}
+                      <Button
+                        onClick={() => window.open(item.file_url, '_blank')}
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                      >
+                        <ExternalLink className="w-4 h-4 mr-1" />
+                        Voir
+                      </Button>
                       <Button
                         onClick={() => handleDelete(item)}
                         variant="outline"

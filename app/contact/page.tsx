@@ -32,19 +32,34 @@ export default function ContactPage() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/contact', {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+      const insertResponse = await fetch(`${supabaseUrl}/rest/v1/contact_messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'apikey': supabaseKey!,
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Prefer': 'return=minimal',
         },
         body: JSON.stringify(formData),
       });
 
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || 'Erreur lors de l\'envoi du message');
+      if (!insertResponse.ok) {
+        throw new Error('Erreur lors de l\'enregistrement du message');
       }
+
+      const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-contact-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const emailResult = await emailResponse.json();
 
       toast({
         title: 'Message envoyé',
