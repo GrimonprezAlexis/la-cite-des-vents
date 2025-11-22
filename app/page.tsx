@@ -58,9 +58,9 @@ export default function Home() {
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="container mx-auto px-4 text-center text-white">
                       <div className="max-w-5xl mx-auto flex flex-col items-center">
-                        <div className="mb-4 md:mb-6 animate-scale-in">
+                        <div className="mb-2 md:mb-3 animate-scale-in">
                           <Image
-                            src="/ChatGPT Image 22 nov. 2025, 15_55_59.png"
+                            src="/logo-v3.png"
                             alt="La Cité Fleurie"
                             width={680}
                             height={453}
