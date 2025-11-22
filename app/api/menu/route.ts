@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/api/firebase/admin';
 
 export async function GET() {
   try {
-    if (!db) {
+    if (!adminDb) {
       return NextResponse.json({ success: true, data: [] });
     }
 
-    const menuSnapshot = await db.collection('menu_items').orderBy('order').get();
+    const menuSnapshot = await adminDb.collection('menu_items').orderBy('order').get();
 
     const menuItems = menuSnapshot.docs.map(doc => ({
       id: doc.id,
@@ -26,7 +26,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    if (!db) {
+    if (!adminDb) {
       return NextResponse.json(
         { success: false, error: 'Database not configured' },
         { status: 500 }
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
 
     const data = await request.json();
 
-    const docRef = await db.collection('menu_items').add({
+    const docRef = await adminDb.collection('menu_items').add({
       ...data,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    if (!db) {
+    if (!adminDb) {
       return NextResponse.json(
         { success: false, error: 'Database not configured' },
         { status: 500 }
@@ -73,7 +73,7 @@ export async function PUT(request: Request) {
       );
     }
 
-    await db.collection('menu_items').doc(id).update({
+    await adminDb.collection('menu_items').doc(id).update({
       ...data,
       updatedAt: new Date().toISOString(),
     });
@@ -93,7 +93,7 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    if (!db) {
+    if (!adminDb) {
       return NextResponse.json(
         { success: false, error: 'Database not configured' },
         { status: 500 }
@@ -110,7 +110,7 @@ export async function DELETE(request: Request) {
       );
     }
 
-    await db.collection('menu_items').doc(id).delete();
+    await adminDb.collection('menu_items').doc(id).delete();
 
     return NextResponse.json({
       success: true,

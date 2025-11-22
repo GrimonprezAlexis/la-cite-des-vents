@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
-import { db } from '@/lib/firebase-admin';
+import { adminDb } from '@/lib/api/firebase/admin';
 
 export async function POST(request: Request) {
   try {
@@ -18,8 +18,8 @@ export async function POST(request: Request) {
     };
 
     let docRef;
-    if (db) {
-      docRef = await db.collection('contact_messages').add(contactData);
+    if (adminDb) {
+      docRef = await adminDb.collection('contact_messages').add(contactData);
     }
 
     const transporter = nodemailer.createTransport({
@@ -195,8 +195,8 @@ export async function POST(request: Request) {
         html: clientHtmlContent,
       });
 
-      if (db && docRef) {
-        await db.collection('contact_messages').doc(docRef.id).update({
+      if (adminDb && docRef) {
+        await adminDb.collection('contact_messages').doc(docRef.id).update({
           status: 'sent',
           updatedAt: new Date().toISOString(),
         });
