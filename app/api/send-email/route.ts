@@ -107,7 +107,7 @@ const generateEmailTemplate = (contexte: any) => {
                       <strong>La Cité Fleurie</strong> - Restaurant, Lounge Bar & Terrasse
                     </p>
                     <p style="margin: 0 0 15px 0; color: #95a5a6; font-size: 11px;">
-                      Chem. de l'Echo 3, 1213 Onex
+                      Chem. de l'Echo 3, 1213 Onex (Suisse)
                     </p>
                     <div style="height: 1px; width: 60px; background-color: #d4af37; margin: 15px auto;"></div>
                     <p style="margin: 0; color: #95a5a6; font-size: 10px;">
