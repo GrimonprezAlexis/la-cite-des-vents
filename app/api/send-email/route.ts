@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-const nodemailer = require('nodemailer');
+import nodemailer from 'nodemailer'; // plutôt que require
+
+export const dynamic = 'force-dynamic'; // la route est dynamique, c'est normal
+export const runtime = 'nodejs';        // nécessaire pour nodemailer
 
 export async function POST(request: NextRequest) {
   try {
@@ -148,9 +151,9 @@ ${message}
       { status: 200 }
     );
   } catch (error) {
-    console.error('Erreur lors de l\'envoi de l\'email:', error);
+    console.error("Erreur lors de l'envoi de l'email:", error);
     return NextResponse.json(
-      { error: 'Erreur lors de l\'envoi de l\'email' },
+      { error: "Erreur lors de l'envoi de l'email" },
       { status: 500 }
     );
   }
