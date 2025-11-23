@@ -25,7 +25,7 @@ const generateEmailTemplate = (contexte: any) => {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Nouveau message de contact - La Cité Fleurie</title>
+  <title>Nouveau message de contact - La Cité des Vents</title>
       </head>
       <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f0;">
         <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f0; padding: 40px 20px;">
@@ -37,7 +37,7 @@ const generateEmailTemplate = (contexte: any) => {
                 <tr>
                   <td style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); padding: 40px 30px; text-align: center;">
                     <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 300; letter-spacing: 2px;">
-                      La Cité Fleurie
+                      La Cité des Vents
                     </h1>
                     <div style="margin-top: 10px; height: 2px; width: 80px; background-color: #d4af37; margin-left: auto; margin-right: auto;"></div>
                   </td>
@@ -104,7 +104,7 @@ const generateEmailTemplate = (contexte: any) => {
                 <tr>
                   <td style="background-color: #2c3e50; padding: 30px; text-align: center;">
                     <p style="margin: 0 0 10px 0; color: #ecf0f1; font-size: 12px;">
-                      <strong>La Cité Fleurie</strong> - Restaurant, Lounge Bar & Terrasse
+                      <strong>La Cité des Vents</strong> - Restaurant, Lounge Bar & Terrasse
                     </p>
                     <p style="margin: 0 0 15px 0; color: #95a5a6; font-size: 11px;">
                       2 Quai de la Criée, 17590 Ars-en-Ré
@@ -155,10 +155,10 @@ export async function POST(request: NextRequest) {
     }
 
     await transporter.sendMail({
-      from: `"La Cité Fleurie - Contact" <${process.env.SMTP_USER}>`,
+      from: `"La Cité des Vents - Contact" <${process.env.SMTP_USER}>`,
       to: process.env.CONTACT_EMAIL,
       replyTo: email,
-      subject: `Nouveau message de ${name} - La Cité Fleurie`,
+      subject: `Nouveau message de ${name} - La Cité des Vents`,
       html: generateEmailTemplate({ name, email, phone, message }),
       text: `
       Nouveau message de contact
@@ -176,16 +176,16 @@ export async function POST(request: NextRequest) {
     await transporter.sendMail({
       from: process.env.NEXT_PUBLIC_SMTP_FROM,
       to: email,
-      subject: "Confirmation de votre demande de contact - La Cité Fleurie",
+      subject: "Confirmation de votre demande de contact - La Cité des Vents",
       html: `<p>Bonjour ${name},</p>
         <p>Merci de nous avoir contactés. Nous avons bien reçu votre message et nous vous répondrons dans les plus brefs délais.</p>
-        <p>Cordialement,<br/>L'équipe de La Cité Fleurie</p>`,
+  <p>Cordialement,<br/>L'équipe de La Cité des Vents</p>`,
       text: `Bonjour ${name},
 
         Merci de nous avoir contactés. Nous avons bien reçu votre message et nous vous répondrons dans les plus brefs délais.
 
         Cordialement,
-        L'équipe de La Cité Fleurie`.trim(),
+  L'équipe de La Cité des Vents`.trim(),
     });
 
     return NextResponse.json(

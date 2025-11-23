@@ -1,24 +1,28 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { checkAdminAuth, setAdminSession, isAdminAuthenticated } from '@/lib/auth';
-import { useToast } from '@/hooks/use-toast';
-import { Lock } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  checkAdminAuth,
+  setAdminSession,
+  isAdminAuthenticated,
+} from "@/lib/auth";
+import { useToast } from "@/hooks/use-toast";
+import { Lock } from "lucide-react";
 
 export default function AdminLoginPage() {
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
   useEffect(() => {
     if (isAdminAuthenticated()) {
-      router.push('/admin/menu');
+      router.push("/admin/menu");
     }
   }, [router]);
 
@@ -29,15 +33,15 @@ export default function AdminLoginPage() {
     if (checkAdminAuth(password)) {
       setAdminSession();
       toast({
-        title: 'Connexion réussie',
-        description: 'Bienvenue dans l\'espace administrateur',
+        title: "Connexion réussie",
+        description: "Bienvenue dans l'espace administrateur",
       });
-      router.push('/admin/menu');
+      router.push("/admin/menu");
     } else {
       toast({
-        title: 'Erreur',
-        description: 'Mot de passe incorrect',
-        variant: 'destructive',
+        title: "Erreur",
+        description: "Mot de passe incorrect",
+        variant: "destructive",
       });
     }
 
@@ -52,7 +56,7 @@ export default function AdminLoginPage() {
             <Lock className="w-8 h-8 text-white" />
           </div>
           <CardTitle className="text-2xl">Espace Administrateur</CardTitle>
-          <p className="text-gray-600 text-sm">La Cité Fleurie</p>
+          <p className="text-gray-600 text-sm">La Cité des Vents</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -73,7 +77,7 @@ export default function AdminLoginPage() {
               className="w-full bg-[#d3cbc2] hover:bg-[#b8af9f] text-gray-900"
               disabled={loading}
             >
-              {loading ? 'Connexion...' : 'Se connecter'}
+              {loading ? "Connexion..." : "Se connecter"}
             </Button>
           </form>
         </CardContent>
