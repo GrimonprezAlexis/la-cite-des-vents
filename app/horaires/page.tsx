@@ -164,7 +164,7 @@ export default function HorairesPage() {
                     <Sparkles className="w-7 h-7 text-white" />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-3">Soirées musicales</h3>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-3">Notre restaurant</h3>
                     <p className="text-gray-600 text-lg leading-relaxed">
                       Tous les vendredis et samedis soir, profitez de nos soirées musicales dans une ambiance lounge.
                     </p>
