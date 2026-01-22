@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Phone, MapPin, Mail, Clock, Facebook } from "lucide-react";
+import { Phone, MapPin, Clock, Facebook } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function ContactPage() {
@@ -34,32 +34,21 @@ export default function ContactPage() {
     setLoading(true);
 
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      // Store via API Route (server-side)
+      const contactRes = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
 
-      const insertResponse = await fetch(
-        `${supabaseUrl}/rest/v1/contact_messages`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: supabaseKey!,
-            Authorization: `Bearer ${supabaseKey}`,
-            Prefer: "return=minimal",
-          },
-          body: JSON.stringify(formData),
-        }
-      );
-
-      if (!insertResponse.ok) {
+      if (!contactRes.ok) {
         throw new Error("Erreur lors de l'enregistrement du message");
       }
 
+      // Send email notification
       const emailResponse = await fetch("/api/send-email", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
@@ -148,7 +137,7 @@ export default function ContactPage() {
                         type="tel"
                         value={formData.phone}
                         onChange={handleChange}
-                        placeholder="+41 XX XXX XX XX"
+                        placeholder=" XX XXX XX XX"
                       />
                     </div>
 

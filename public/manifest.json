@@ -1,0 +1,21 @@
+{
+  "name": "La Cité des Vents",
+  "short_name": "Cité des Vents",
+  "description": "Restaurant - Pizzeria - Lounge Bar à Onex, Genève",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#d3cbc2",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

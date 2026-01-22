@@ -1,38 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { supabase, MenuItemType } from '@/lib/supabase';
+import { useMenuItems } from '@/hooks/use-menu-items';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FileText, Image as ImageIcon, Download, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function MenuPage() {
-  const [menuItems, setMenuItems] = useState<MenuItemType[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchMenuItems();
-  }, []);
-
-  async function fetchMenuItems() {
-    try {
-      const { data, error } = await supabase
-        .from('menu_items')
-        .select('*')
-        .order('display_order', { ascending: true });
-
-      if (error) throw error;
-      setMenuItems(data || []);
-    } catch (error) {
-      console.error('Error fetching menu items:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const { menuItems, isLoading } = useMenuItems();
 
   const isPDF = (fileType: string) => fileType === 'application/pdf';
   const isImage = (fileType: string) => fileType.startsWith('image/');
+
+  function handleViewMenu(storagePath: string) {
+    window.open(`/api/view-menu?key=${encodeURIComponent(storagePath)}`, '_blank');
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-16">
@@ -50,7 +32,7 @@ export default function MenuPage() {
           </p>
         </div>
 
-        {loading ? (
+        {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[1, 2, 3].map((i) => (
               <Card key={i} className="overflow-hidden">
@@ -75,7 +57,7 @@ export default function MenuPage() {
             <p className="text-gray-600 mb-8">
               Pour plus d&apos;informations, contactez-nous au{' '}
               <a href="tel:+41227930350" className="text-[#d3cbc2] hover:text-[#b8af9f] font-semibold transition-colors">
-                +41 22 793 03 50
+                 022 793 03 50
               </a>
             </p>
             <a href="tel:+41227930350">
@@ -94,12 +76,10 @@ export default function MenuPage() {
               >
                 <CardContent className="p-0">
                   {isImage(item.file_type) ? (
-                    <div className="relative h-72 w-full overflow-hidden">
-                      <img
-                        src={item.file_url}
-                        alt={item.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      />
+                    <div className="relative h-72 w-full overflow-hidden bg-gray-100">
+                      <div className="w-full h-full flex items-center justify-center">
+                        <ImageIcon className="w-24 h-24 text-[#d3cbc2] group-hover:scale-110 transition-transform duration-300" />
+                      </div>
                       <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     </div>
                   ) : isPDF(item.file_type) ? (
@@ -121,18 +101,13 @@ export default function MenuPage() {
                       <p className="text-gray-600 mb-4 leading-relaxed">{item.description}</p>
                     )}
 
-                    <a
-                      href={item.file_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      download={item.file_name}
-                      className="block"
+                    <Button
+                      onClick={() => handleViewMenu(item.storage_path)}
+                      className="w-full bg-gradient-to-r from-[#d3cbc2] to-[#b8af9f] hover:from-[#b8af9f] hover:to-[#d3cbc2] text-gray-900 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
                     >
-                      <Button className="w-full bg-gradient-to-r from-[#d3cbc2] to-[#b8af9f] hover:from-[#b8af9f] hover:to-[#d3cbc2] text-gray-900 font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-                        <Download className="w-5 h-5 mr-2" />
-                        {isPDF(item.file_type) ? 'Télécharger le PDF' : 'Voir en grand'}
-                      </Button>
-                    </a>
+                      <Download className="w-5 h-5 mr-2" />
+                      {isPDF(item.file_type) ? 'Voir le PDF' : 'Voir en grand'}
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

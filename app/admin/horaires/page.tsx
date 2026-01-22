@@ -1,17 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AdminGuard } from '@/components/admin-guard';
 import { AdminNav } from '@/components/admin-nav';
-import { supabase } from '@/lib/supabase';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Edit, Save, X, Clock, Info } from 'lucide-react';
+import { Loader2, Edit, Save, X, Clock, Info, RefreshCw } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import confetti from 'canvas-confetti';
 
 interface OpeningHour {
   id: string;
@@ -19,13 +19,22 @@ interface OpeningHour {
   is_open: boolean;
   open_time: string;
   close_time: string;
-  special_note: string;
+  special_note: string | null;
   display_order: number;
+}
+
+function triggerConfetti() {
+  confetti({
+    particleCount: 100,
+    spread: 70,
+    origin: { y: 0.6 },
+    colors: ['#d3cbc2', '#b8af9f', '#22c55e', '#ffffff'],
+  });
 }
 
 function AdminHorairesContent() {
   const [hours, setHours] = useState<OpeningHour[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const { toast } = useToast();
@@ -37,31 +46,24 @@ function AdminHorairesContent() {
     special_note: '',
   });
 
-  useEffect(() => {
-    fetchHours();
+  const fetchHours = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const res = await fetch('/api/opening-hours', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        setHours(data);
+      }
+    } catch (error) {
+      console.error('Error fetching hours:', error);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  async function fetchHours() {
-    try {
-      const { data, error } = await supabase
-        .from('opening_hours')
-        .select('*')
-        .order('display_order', { ascending: true });
-
-      if (error) throw error;
-
-      setHours(data || []);
-    } catch (error: any) {
-      console.error('Error loading hours:', error);
-      toast({
-        title: 'Erreur',
-        description: error.message || 'Impossible de charger les horaires',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  }
+  useEffect(() => {
+    fetchHours();
+  }, [fetchHours]);
 
   function startEdit(hour: OpeningHour) {
     setEditingId(hour.id);
@@ -86,26 +88,36 @@ function AdminHorairesContent() {
   async function saveEdit(hourId: string) {
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('opening_hours')
-        .update({
-          is_open: editForm.is_open,
-          open_time: editForm.open_time,
-          close_time: editForm.close_time,
-          special_note: editForm.special_note,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', hourId);
+      const res = await fetch(`/api/opening-hours?id=${encodeURIComponent(hourId)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editForm),
+      });
 
-      if (error) throw error;
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Échec de la mise à jour');
+      }
+
+      // Update local state immediately
+      setHours((prevHours) =>
+        prevHours.map((h) =>
+          h.id === hourId
+            ? { ...h, ...editForm }
+            : h
+        )
+      );
+
+      setEditingId(null);
+
+      // Trigger confetti
+      triggerConfetti();
 
       toast({
         title: 'Succès',
         description: 'Horaires mis à jour avec succès',
       });
-
-      setEditingId(null);
-      fetchHours();
     } catch (error: any) {
       console.error('Error updating hours:', error);
       toast({
@@ -124,22 +136,33 @@ function AdminHorairesContent() {
         <AdminNav />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-2">
-              <Clock className="w-8 h-8 text-[#d3cbc2]" />
-              <h1 className="text-3xl font-bold text-gray-900">Gestion des Horaires</h1>
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <Clock className="w-8 h-8 text-[#d3cbc2]" />
+                <h1 className="text-3xl font-bold text-gray-900">Gestion des Horaires</h1>
+              </div>
+              <p className="text-gray-600">Modifiez les horaires d&apos;ouverture du restaurant</p>
             </div>
-            <p className="text-gray-600">Modifiez les horaires d&apos;ouverture du restaurant</p>
+            <Button
+              onClick={fetchHours}
+              variant="outline"
+              size="sm"
+              disabled={isLoading}
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              Actualiser
+            </Button>
           </div>
 
           <Alert className="mb-6 bg-blue-50 border-blue-200">
             <Info className="h-4 w-4 text-blue-600" />
             <AlertDescription className="text-blue-800">
-              Les modifications des horaires seront immédiatement visibles sur la page publique. Vérifiez toujours vos changements après sauvegarde.
+              Les modifications des horaires seront immédiatement visibles sur la page publique.
             </AlertDescription>
           </Alert>
 
-          {loading ? (
+          {isLoading ? (
             <div className="text-center py-12">
               <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#d3cbc2]" />
               <p className="text-gray-600 mt-4">Chargement...</p>
@@ -153,10 +176,7 @@ function AdminHorairesContent() {
                   Les horaires par défaut devraient être créés automatiquement.
                 </p>
                 <Button
-                  onClick={() => {
-                    setLoading(true);
-                    fetchHours();
-                  }}
+                  onClick={fetchHours}
                   className="bg-[#d3cbc2] hover:bg-[#b8af9f] text-gray-900"
                 >
                   Réessayer
@@ -165,12 +185,10 @@ function AdminHorairesContent() {
             </Card>
           ) : (
             <div className="max-w-4xl space-y-3">
-              {hours.map((hour, index) => (
+              {hours.map((hour) => (
                 <Card
                   key={hour.id}
-                  className={`transition-all ${
-                    index === 0 ? 'bg-gray-100 border-gray-300' : 'hover:shadow-md'
-                  }`}
+                  className="transition-all hover:shadow-md"
                 >
                   <CardContent className="p-6">
                     {editingId === hour.id ? (

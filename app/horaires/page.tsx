@@ -1,52 +1,26 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { supabase, OpeningHourType } from '@/lib/supabase';
+import { useOpeningHours } from '@/hooks/use-opening-hours';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Clock, Phone, MapPin, Calendar, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
+const DEFAULT_HOURS = [
+  { day: 'Dimanche', hours: '07:30 - 00:00' },
+  { day: 'Lundi', hours: '07:30 - 00:00' },
+  { day: 'Mardi', hours: '07:30 - 00:00' },
+  { day: 'Mercredi', hours: '07:30 - 00:00' },
+  { day: 'Jeudi', hours: '07:30 - 00:00' },
+  { day: 'Vendredi', hours: '07:30 - 00:00' },
+  { day: 'Samedi', hours: '07:30 - 00:00' },
+];
+
 export default function HorairesPage() {
-  const [hours, setHours] = useState<OpeningHourType[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { hours, isLoading } = useOpeningHours();
 
-  useEffect(() => {
-    fetchHours();
-  }, []);
-
-  async function fetchHours() {
-    try {
-      const { data, error } = await supabase
-        .from('opening_hours')
-        .select('*')
-        .order('display_order', { ascending: true });
-
-      if (error) throw error;
-      setHours(data || []);
-    } catch (error) {
-      console.error('Error fetching hours:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const formatTime = (time: string) => {
-    return time;
-  };
-
-  const defaultHours = [
-    { day: 'Dimanche', hours: '07:30 - 00:00' },
-    { day: 'Lundi', hours: '07:30 - 00:00' },
-    { day: 'Mardi', hours: '07:30 - 00:00' },
-    { day: 'Mercredi', hours: '07:30 - 00:00' },
-    { day: 'Jeudi', hours: '07:30 - 00:00' },
-    { day: 'Vendredi', hours: '07:30 - 00:00' },
-    { day: 'Samedi', hours: '07:30 - 00:00' },
-  ];
-
-  const displayHours = hours.length > 0 ? hours : defaultHours.map((h, i) => ({
+  const displayHours = hours.length > 0 ? hours : DEFAULT_HOURS.map((h, i) => ({
     id: i.toString(),
     day_of_week: h.day,
     is_open: true,
@@ -54,8 +28,6 @@ export default function HorairesPage() {
     close_time: '00:00',
     special_note: null,
     display_order: i + 1,
-    created_at: '',
-    updated_at: '',
   }));
 
   return (
@@ -82,7 +54,7 @@ export default function HorairesPage() {
               </div>
 
               <div className="p-8">
-                {loading ? (
+                {isLoading ? (
                   <div className="space-y-4">
                     {[1, 2, 3, 4, 5, 6, 7].map((i) => (
                       <div key={i} className="flex justify-between items-center py-3 border-b border-gray-200">
@@ -113,7 +85,7 @@ export default function HorairesPage() {
                         <div className="text-right">
                           {hour.is_open ? (
                             <span className="text-[#d3cbc2] font-bold text-xl">
-                              {formatTime(hour.open_time)} - {formatTime(hour.close_time)}
+                              {hour.open_time} - {hour.close_time}
                             </span>
                           ) : (
                             <span className="text-red-500 font-bold text-xl">Fermé</span>
@@ -185,7 +157,7 @@ export default function HorairesPage() {
                   href="tel:+41227930350"
                   className="text-lg text-gray-700 hover:text-[#d3cbc2] transition-colors font-medium"
                 >
-                  +41 22 793 03 50
+                   022 793 03 50
                 </a>
               </div>
               <div className="flex items-start space-x-4 p-4 rounded-xl bg-white shadow-md hover:shadow-xl transition-shadow">

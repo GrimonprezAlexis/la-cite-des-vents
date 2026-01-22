@@ -15,6 +15,10 @@ export function Footer() {
               Italienne et Française, Pizza au feu de bois. Soirées musicales
               tous les vendredis et samedis.
             </p>
+            <a href="/admin" className="flex items-center space-x-2 hover:text-[#d3cbc2] transition-colors">
+              <Mail className="w-5 h-5" />
+              <span>Admin</span>
+            </a>
           </div>
 
           <div>

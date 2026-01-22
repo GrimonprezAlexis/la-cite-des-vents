@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { AdminGuard } from '@/components/admin-guard';
 import { AdminNav } from '@/components/admin-nav';
-import { supabase } from '@/lib/supabase';
+import { useMenuItems } from '@/hooks/use-menu-items';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,24 +19,22 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import confetti from 'canvas-confetti';
 
-interface MenuItem {
-  id: string;
-  title: string;
-  description: string;
-  file_url: string;
-  file_type: string;
-  file_name: string;
-  storage_path: string;
-  display_order: number;
-  created_at: string;
+function triggerConfetti() {
+  confetti({
+    particleCount: 100,
+    spread: 70,
+    origin: { y: 0.6 },
+    colors: ['#d3cbc2', '#b8af9f', '#22c55e', '#ffffff'],
+  });
 }
 
 function AdminMenuContent() {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { menuItems, isLoading, mutate } = useMenuItems({ refreshInterval: 0 });
   const [uploading, setUploading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [preview, setPreview] = useState<{ url: string; type: string; name: string } | null>(null);
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -44,32 +42,6 @@ function AdminMenuContent() {
     description: '',
     file: null as File | null,
   });
-
-  useEffect(() => {
-    fetchMenuItems();
-  }, []);
-
-  async function fetchMenuItems() {
-    try {
-      const { data, error } = await supabase
-        .from('menu_items')
-        .select('*')
-        .order('display_order', { ascending: true });
-
-      if (error) throw error;
-
-      setMenuItems(data || []);
-    } catch (error: any) {
-      console.error('Error loading menu items:', error);
-      toast({
-        title: 'Erreur',
-        description: error.message || 'Impossible de charger les menus',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
@@ -104,48 +76,57 @@ function AdminMenuContent() {
     setUploading(true);
 
     try {
-      const sanitizedFileName = formData.file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const fileName = `${Date.now()}_${sanitizedFileName}`;
-      const storagePath = `${fileName}`;
+      // Upload file to S3 via API Route
+      const uploadData = new FormData();
+      uploadData.append('file', formData.file);
 
-      const { error: uploadError } = await supabase.storage
-        .from('menus')
-        .upload(storagePath, formData.file, {
-          cacheControl: '3600',
-          upsert: false,
-        });
-
-      if (uploadError) throw uploadError;
-
-      const { data: urlData } = supabase.storage
-        .from('menus')
-        .getPublicUrl(storagePath);
-
-      const { error: dbError } = await supabase.from('menu_items').insert({
-        title: formData.title,
-        description: formData.description || '',
-        file_url: urlData.publicUrl,
-        file_type: formData.file.type,
-        file_name: formData.file.name,
-        storage_path: storagePath,
-        display_order: menuItems.length,
+      const uploadRes = await fetch('/api/upload-menu', {
+        method: 'POST',
+        body: uploadData,
       });
 
-      if (dbError) throw dbError;
+      if (!uploadRes.ok) {
+        const errorData = await uploadRes.json();
+        throw new Error(errorData.error || "Échec de l'upload");
+      }
+
+      const { url: fileUrl, storagePath, fileName, fileType } = await uploadRes.json();
+
+      // Save to Firestore via API Route
+      const saveRes = await fetch('/api/menu-items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: formData.title,
+          description: formData.description || '',
+          file_url: fileUrl,
+          file_type: fileType,
+          file_name: fileName,
+          storage_path: storagePath,
+          display_order: menuItems.length,
+        }),
+      });
+
+      if (!saveRes.ok) {
+        throw new Error("Échec de l'enregistrement");
+      }
+
+      setFormData({ title: '', description: '', file: null });
+      setIsDialogOpen(false);
+      mutate(); // Revalidate SWR cache
+
+      // Trigger confetti
+      triggerConfetti();
 
       toast({
         title: 'Succès',
         description: 'Menu ajouté avec succès',
       });
-
-      setFormData({ title: '', description: '', file: null });
-      setIsDialogOpen(false);
-      fetchMenuItems();
     } catch (error: any) {
       console.error('Upload error:', error);
       toast({
         title: 'Erreur',
-        description: error.message || 'Échec de l\'upload du fichier',
+        description: error.message || "Échec de l'upload du fichier",
         variant: 'destructive',
       });
     } finally {
@@ -153,33 +134,39 @@ function AdminMenuContent() {
     }
   }
 
-  async function handleDelete(item: MenuItem) {
+  async function handleDelete(item: { id: string; title: string; storage_path: string }) {
     if (!confirm(`Êtes-vous sûr de vouloir supprimer "${item.title}" ?`)) {
       return;
     }
 
     try {
-      const { error: storageError } = await supabase.storage
-        .from('menus')
-        .remove([item.storage_path]);
-
-      if (storageError) {
-        console.error('Storage deletion error:', storageError);
+      // Delete file from S3 via API Route
+      if (item.storage_path) {
+        await fetch(`/api/delete-menu?key=${encodeURIComponent(item.storage_path)}`, {
+          method: 'DELETE',
+        }).catch((err) => {
+          console.error('Storage deletion error:', err);
+        });
       }
 
-      const { error: dbError } = await supabase
-        .from('menu_items')
-        .delete()
-        .eq('id', item.id);
+      // Delete from Firestore via API Route
+      const deleteRes = await fetch(`/api/menu-items?id=${encodeURIComponent(item.id)}`, {
+        method: 'DELETE',
+      });
 
-      if (dbError) throw dbError;
+      if (!deleteRes.ok) {
+        throw new Error('Échec de la suppression');
+      }
+
+      mutate(); // Revalidate SWR cache
+
+      // Trigger confetti
+      triggerConfetti();
 
       toast({
         title: 'Succès',
         description: 'Menu supprimé avec succès',
       });
-
-      fetchMenuItems();
     } catch (error: any) {
       console.error('Delete error:', error);
       toast({
@@ -189,7 +176,6 @@ function AdminMenuContent() {
       });
     }
   }
-
 
   return (
     <AdminGuard>
@@ -281,7 +267,7 @@ function AdminMenuContent() {
             </Dialog>
           </div>
 
-          {loading ? (
+          {isLoading ? (
             <div className="text-center py-12">
               <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#d3cbc2]" />
               <p className="text-gray-600 mt-4">Chargement...</p>
@@ -326,7 +312,13 @@ function AdminMenuContent() {
 
                     <div className="flex gap-2">
                       <Button
-                        onClick={() => window.open(item.file_url, '_blank')}
+                        onClick={() => {
+                          setPreview({
+                            url: `/api/view-menu?key=${encodeURIComponent(item.storage_path)}`,
+                            type: item.file_type,
+                            name: item.file_name,
+                          });
+                        }}
                         variant="outline"
                         size="sm"
                         className="flex-1"
@@ -348,6 +340,23 @@ function AdminMenuContent() {
               ))}
             </div>
           )}
+
+          {/* Modal de prévisualisation */}
+          <Dialog open={!!preview} onOpenChange={(open) => !open && setPreview(null)}>
+            <DialogContent className="max-w-2xl w-full">
+              <DialogHeader>
+                <DialogTitle>Prévisualisation du menu</DialogTitle>
+                <DialogDescription>{preview?.name}</DialogDescription>
+              </DialogHeader>
+              {preview?.type.startsWith('image/') ? (
+                <img src={preview.url} alt={preview.name} className="w-full max-h-[70vh] object-contain rounded" />
+              ) : preview?.type === 'application/pdf' ? (
+                <iframe src={preview.url} title={preview.name} className="w-full min-h-[70vh] rounded" />
+              ) : (
+                <div className="text-center text-gray-500">Type de fichier non supporté</div>
+              )}
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </AdminGuard>
