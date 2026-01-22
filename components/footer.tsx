@@ -1,7 +1,15 @@
+'use client';
+
 import Link from "next/link";
 import { Facebook, Phone, MapPin, Mail } from "lucide-react";
+import { useContactSettings } from "@/hooks/use-contact-settings";
 
 export function Footer() {
+  const { settings } = useContactSettings();
+
+  // Format phone for tel: link (remove spaces)
+  const phoneLink = settings.phone.replace(/\s/g, '');
+
   return (
     <footer className="bg-gray-900 text-gray-300">
       <div className="container mx-auto px-4 py-12">
@@ -25,17 +33,17 @@ export function Footer() {
             <h3 className="text-xl font-semibold text-white mb-4">Contact</h3>
             <div className="space-y-3">
               <a
-                href="tel:0227971070"
+                href={`tel:${phoneLink}`}
                 className="flex items-center space-x-3 hover:text-[#d3cbc2] transition-colors"
               >
                 <Phone className="w-5 h-5" />
-                <span>022 797 10 70</span>
+                <span>{settings.phone}</span>
               </a>
               <div className="flex items-start space-x-3">
                 <MapPin className="w-5 h-5 mt-1 flex-shrink-0" />
                 <span>
-                  Rue de la Coupe Gordon-Bennett 3<br />
-                  1219 Aïre
+                  Chemin de l&apos;Echo 3<br />
+                  1213 Onex
                 </span>
               </div>
               <a

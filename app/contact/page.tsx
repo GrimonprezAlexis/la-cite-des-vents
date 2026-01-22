@@ -8,10 +8,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Phone, MapPin, Clock, Facebook } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useContactSettings } from "@/hooks/use-contact-settings";
 
 export default function ContactPage() {
   const { toast } = useToast();
+  const { settings } = useContactSettings();
   const [loading, setLoading] = useState(false);
+
+  // Format phone for tel: link (remove spaces)
+  const phoneLink = settings.phone.replace(/\s/g, '');
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -192,10 +197,10 @@ export default function ContactPage() {
                     <div>
                       <p className="font-medium text-gray-900">Téléphone</p>
                       <a
-                        href="tel:0227971070"
+                        href={`tel:${phoneLink}`}
                         className="text-gray-600 hover:text-[#d3cbc2] transition-colors"
                       >
-                        022 797 10 70
+                        {settings.phone}
                       </a>
                     </div>
                   </div>
@@ -245,7 +250,7 @@ export default function ContactPage() {
                 <p className="text-white mb-4 text-sm">
                   Pour une réservation immédiate, appelez-nous directement.
                 </p>
-                <a href="tel:+41227930350">
+                <a href={`tel:${phoneLink}`}>
                   <Button className="w-full bg-white text-gray-900 hover:bg-gray-100">
                     <Phone className="w-4 h-4 mr-2" />
                     Appeler maintenant

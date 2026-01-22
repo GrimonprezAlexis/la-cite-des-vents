@@ -1,6 +1,14 @@
+'use client';
+
 import { Card, CardContent } from "@/components/ui/card";
+import { useContactSettings } from "@/hooks/use-contact-settings";
 
 export default function MentionsLegalesPage() {
+  const { settings } = useContactSettings();
+
+  // Format phone for tel: link (remove spaces)
+  const phoneLink = settings.phone.replace(/\s/g, '');
+
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="container mx-auto px-4 max-w-4xl">
@@ -27,10 +35,10 @@ export default function MentionsLegalesPage() {
               <p>
                 <strong>Téléphone :</strong>{" "}
                 <a
-                  href="tel:+41227930350"
+                  href={`tel:${phoneLink}`}
                   className="text-[#d3cbc2] hover:underline"
                 >
-                   022 793 03 50
+                  {settings.phone}
                 </a>
               </p>
               <p>
@@ -103,7 +111,7 @@ export default function MentionsLegalesPage() {
                 <strong>Droit d&apos;accès et de rectification :</strong> Vous
                 disposez d&apos;un droit d&apos;accès, de rectification et de
                 suppression de vos données personnelles. Pour exercer ce droit,
-                contactez-nous au  022 793 03 50.
+                contactez-nous au {settings.phone}.
               </p>
             </div>
           </CardContent>
@@ -164,7 +172,7 @@ export default function MentionsLegalesPage() {
         </Card>
 
         <div className="mt-8 text-center text-gray-600">
-          <p>Dernière mise à jour : Octobre 2025</p>
+          <p>Dernière mise à jour : Janvier 2026</p>
         </div>
       </div>
     </div>

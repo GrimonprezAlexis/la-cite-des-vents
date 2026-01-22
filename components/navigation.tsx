@@ -5,11 +5,16 @@ import { usePathname } from "next/navigation";
 import { Menu, X, Phone, MapPin } from "lucide-react";
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { useContactSettings } from "@/hooks/use-contact-settings";
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const pathname = usePathname();
+  const { settings } = useContactSettings();
+
+  // Format phone for tel: link (remove spaces)
+  const phoneLink = settings.phone.replace(/\s/g, '');
 
   const isActive = (path: string) => pathname === path;
 
@@ -86,7 +91,7 @@ export function Navigation() {
 
           <div className="hidden md:flex items-center space-x-4">
             <a
-              href="tel:0227971070"
+              href={`tel:${phoneLink}`}
               className="flex items-center space-x-3 px-4 py-2 rounded-full bg-gradient-to-r from-[#d3cbc2]/10 to-[#b8af9f]/10 hover:from-[#d3cbc2]/20 hover:to-[#b8af9f]/20 transition-all duration-300 group"
             >
               <div className="w-10 h-10 bg-gradient-to-br from-[#d3cbc2] to-[#b8af9f] rounded-full flex items-center justify-center shadow-lg group-hover:shadow-2xl group-hover:scale-110 transition-all duration-300">
@@ -97,7 +102,7 @@ export function Navigation() {
                   isScrolled ? "text-gray-900" : "text-gray-900"
                 }`}
               >
-                022 797 10 70
+                {settings.phone}
               </span>
             </a>
           </div>
@@ -132,16 +137,16 @@ export function Navigation() {
               ))}
               <div className="pt-4 border-t border-gray-200">
                 <a
-                  href="tel:0227971070"
+                  href={`tel:${phoneLink}`}
                   className="flex items-center space-x-2 text-gray-600 hover:text-[#d3cbc2] py-2 px-4 transition-colors duration-300"
                 >
                   <Phone className="w-4 h-4" />
-                  <span>022 797 10 70</span>
+                  <span>{settings.phone}</span>
                 </a>
                 <div className="flex items-start space-x-2 text-gray-600 py-2 px-4">
                   <MapPin className="w-4 h-4 mt-1 flex-shrink-0" />
                   <span className="text-sm">
-                    Rue de la Coupe Gordon-Bennett 3, 1219 Aïre
+                    Chemin de l&apos;Echo 3, 1213 Onex
                   </span>
                 </div>
               </div>

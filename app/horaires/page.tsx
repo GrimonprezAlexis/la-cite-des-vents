@@ -1,6 +1,7 @@
 'use client';
 
 import { useOpeningHours } from '@/hooks/use-opening-hours';
+import { useContactSettings } from '@/hooks/use-contact-settings';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Clock, Phone, MapPin, Calendar, Sparkles } from 'lucide-react';
@@ -19,6 +20,10 @@ const DEFAULT_HOURS = [
 
 export default function HorairesPage() {
   const { hours, isLoading } = useOpeningHours();
+  const { settings } = useContactSettings();
+
+  // Format phone for tel: link (remove spaces)
+  const phoneLink = settings.phone.replace(/\s/g, '');
 
   const displayHours = hours.length > 0 ? hours : DEFAULT_HOURS.map((h, i) => ({
     id: i.toString(),
@@ -154,10 +159,10 @@ export default function HorairesPage() {
                   <Phone className="w-7 h-7 text-white" />
                 </div>
                 <a
-                  href="tel:+41227930350"
+                  href={`tel:${phoneLink}`}
                   className="text-lg text-gray-700 hover:text-[#d3cbc2] transition-colors font-medium"
                 >
-                   022 793 03 50
+                  {settings.phone}
                 </a>
               </div>
               <div className="flex items-start space-x-4 p-4 rounded-xl bg-white shadow-md hover:shadow-xl transition-shadow">
@@ -172,7 +177,7 @@ export default function HorairesPage() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-6 justify-center">
-              <a href="tel:+41227930350">
+              <a href={`tel:${phoneLink}`}>
                 <Button size="lg" className="bg-[#d3cbc2] hover:bg-[#b8af9f] text-gray-900 font-semibold text-lg px-8 py-6 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
                   <Phone className="w-6 h-6 mr-2" />
                   Réserver par téléphone
