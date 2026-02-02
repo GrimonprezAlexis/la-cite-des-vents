@@ -32,13 +32,24 @@ export function Footer() {
           <div>
             <h3 className="text-xl font-semibold text-white mb-4">Contact</h3>
             <div className="space-y-3">
-              <a
-                href={`tel:${phoneLink}`}
-                className="flex items-center space-x-3 hover:text-[#d3cbc2] transition-colors"
-              >
-                <Phone className="w-5 h-5" />
-                <span>{settings.phone}</span>
-              </a>
+              <div className="flex items-center space-x-3">
+                <Phone className="w-5 h-5 flex-shrink-0" />
+                <div className="flex items-center gap-2 flex-wrap">
+                  <a
+                    href={`tel:${phoneLink}`}
+                    className="hover:text-[#d3cbc2] transition-colors font-medium"
+                  >
+                    {settings.phone}
+                  </a>
+                  <span className="text-gray-500">•</span>
+                  <a
+                    href="tel:0227971070"
+                    className="hover:text-[#d3cbc2] transition-colors font-medium"
+                  >
+                    022 797 10 70
+                  </a>
+                </div>
+              </div>
               <div className="flex items-start space-x-3">
                 <MapPin className="w-5 h-5 mt-1 flex-shrink-0" />
                 <span>
