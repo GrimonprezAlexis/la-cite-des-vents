@@ -26,20 +26,16 @@ import { useContactSettings } from "@/hooks/use-contact-settings";
 
 const restaurantImages = [
   {
-    url: "/hero3.png",
-    alt: "Ambiance lounge bar",
+    url: "/citedesvents-exterieur.jpg",
+    alt: "Terrasse du restaurant",
   },
   {
-    url: "/hero1.png",
-    alt: "Restaurant élégant",
+    url: "/citedesvents-interieur3.png",
+    alt: "Salle intérieure événements",
   },
   {
-    url: "/hero2.png",
-    alt: "Cuisine française raffinée",
-  },
-  {
-    url: "/hero4.png",
-    alt: "Nouvelle ambiance moderne",
+    url: "/citedesvents-interieur2.jpg",
+    alt: "Grande salle du restaurant",
   },
 ];
 
@@ -140,7 +136,7 @@ export default function Home() {
             </h2>
             <div className="w-32 h-1.5 bg-gradient-to-r from-transparent via-[#d3cbc2] to-transparent mx-auto mb-10 rounded-full shadow-lg"></div>
             <p className="text-lg md:text-xl lg:text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-              Depuis 17 ans, nous vous accueillons dans notre restaurant à Onex
+              Depuis 17 ans, nous vous accueillons dans notre restaurant au Lignon
               pour vous faire découvrir les saveurs authentiques de la cuisine
               italienne et française. Nos pizzas au feu de bois et notre
               ambiance lounge bar créent une expérience culinaire unique.
@@ -249,7 +245,7 @@ export default function Home() {
                     <MapPin className="w-7 h-7 text-[#d3cbc2]" />
                   </div>
                   <span className="text-gray-700 text-lg md:text-xl font-semibold">
-                    Rue de la Coupe Gordon-Bennett 3, 1219 Aïre
+                    3, rue de la Coupe Gordon-Bennett, 1219 Le Lignon
                   </span>
                 </div>
               </div>

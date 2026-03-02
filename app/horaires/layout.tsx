@@ -1,19 +1,23 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Horaires d\'ouverture',
+  title: 'Horaires d\'ouverture | Restaurant au Lignon, Vernier',
   description:
-    'Horaires d\'ouverture de La Cité des Vents : ouvert 7j/7 de 07h30 à minuit. Restaurant Pizzeria Lounge Bar à Onex, Genève.',
+    'Horaires d\'ouverture de La Cité des Vents, restaurant pizzeria au Lignon (Vernier), Genève. Ouvert 7j/7 de 07h30 à minuit. Déjeuner, dîner, brunch et soirées musicales.',
   keywords: [
-    'horaires restaurant Onex',
+    'horaires restaurant Le Lignon',
+    'horaires restaurant Vernier',
     'heures ouverture pizzeria Genève',
     'restaurant ouvert dimanche Genève',
-    'brunch Onex horaires',
+    'restaurant ouvert dimanche Vernier',
+    'brunch Le Lignon horaires',
+    'brunch Vernier',
+    'restaurant ouvert midi Le Lignon',
   ],
   openGraph: {
-    title: 'Horaires d\'ouverture | La Cité des Vents',
+    title: 'Horaires d\'ouverture | La Cité des Vents - Le Lignon',
     description:
-      'Ouvert 7j/7 de 07h30 à minuit. Déjeuner, dîner et brunch à Onex.',
+      'Ouvert 7j/7 de 07h30 à minuit. Déjeuner, dîner et brunch au Lignon (Vernier), Genève.',
     url: '/horaires',
     type: 'website',
   },

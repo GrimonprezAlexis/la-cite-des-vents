@@ -170,8 +170,8 @@ export default function HorairesPage() {
                   <MapPin className="w-7 h-7 text-white" />
                 </div>
                 <div>
-                  <p className="text-gray-700 font-medium">Chemin de l&apos;Echo 3</p>
-                  <p className="text-gray-700 font-medium">1213 Onex, Suisse</p>
+                  <p className="text-gray-700 font-medium">3, rue de la Coupe Gordon-Bennett</p>
+                  <p className="text-gray-700 font-medium">1219 Le Lignon, Suisse</p>
                 </div>
               </div>
             </div>

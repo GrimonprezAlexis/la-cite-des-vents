@@ -166,7 +166,7 @@ export function Navigation() {
                 <div className="flex items-start space-x-2 text-gray-600 py-2 px-4">
                   <MapPin className="w-4 h-4 mt-1 flex-shrink-0" />
                   <span className="text-sm">
-                    Chemin de l&apos;Echo 3, 1213 Onex
+                    3, rue de la Coupe Gordon-Bennett, 1219 Le Lignon
                   </span>
                 </div>
               </div>

@@ -29,7 +29,7 @@ export default function MentionsLegalesPage() {
                 <strong>Forme juridique :</strong> Société Anonyme (SA)
               </p>
               <p>
-                <strong>Adresse :</strong> Chemin de l&apos;Echo 3, 1213 Onex,
+                <strong>Adresse :</strong> 3, rue de la Coupe Gordon-Bennett, 1219 Le Lignon,
                 Suisse
               </p>
               <p>

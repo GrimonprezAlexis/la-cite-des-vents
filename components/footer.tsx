@@ -50,13 +50,18 @@ export function Footer() {
                   </a>
                 </div>
               </div>
-              <div className="flex items-start space-x-3">
+              <a
+                href="https://www.google.com/maps/search/?api=1&query=3+rue+de+la+Coupe+Gordon-Bennett+1219+Le+Lignon"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-start space-x-3 hover:text-[#d3cbc2] transition-colors"
+              >
                 <MapPin className="w-5 h-5 mt-1 flex-shrink-0" />
                 <span>
-                  Chemin de l&apos;Echo 3<br />
-                  1213 Onex
+                  3, rue de la Coupe Gordon-Bennett<br />
+                  1219 Le Lignon
                 </span>
-              </div>
+              </a>
               <a
                 href="https://www.facebook.com/p/La-Cit%C3%A9-Fleurie-100063631886817/"
                 target="_blank"

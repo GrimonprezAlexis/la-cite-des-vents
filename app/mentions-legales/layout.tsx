@@ -3,7 +3,7 @@ import { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'Mentions Légales',
   description:
-    'Mentions légales et politique de confidentialité de La Cité des Vents SA, restaurant à Onex, Genève.',
+    'Mentions légales et politique de confidentialité de La Cité des Vents SA, restaurant au Lignon, Genève.',
   robots: {
     index: false,
     follow: true,
