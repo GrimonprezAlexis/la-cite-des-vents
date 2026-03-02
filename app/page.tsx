@@ -255,14 +255,14 @@ export default function Home() {
               <div className="space-y-6 lg:space-y-8">
                 <div className="overflow-hidden rounded-3xl shadow-2xl hover:shadow-[#d3cbc2]/20 transition-all duration-500">
                   <img
-                    src="/IMG_8798.png"
+                    src="/citedesvents-interieur6.jpg"
                     alt="Événement spécial 1"
                     className="w-full h-72 lg:h-80 object-cover hover:scale-110 transition-transform duration-700"
                   />
                 </div>
                 <div className="overflow-hidden rounded-3xl shadow-2xl hover:shadow-[#d3cbc2]/20 transition-all duration-500">
                   <img
-                    src="/IMG_8802.png"
+                    src="/citedesvents-interieur5.png"
                     alt="Événement spécial 2"
                     className="w-full h-56 lg:h-64 object-cover hover:scale-110 transition-transform duration-700"
                   />
@@ -271,14 +271,14 @@ export default function Home() {
               <div className="space-y-6 lg:space-y-8 pt-12 lg:pt-16">
                 <div className="overflow-hidden rounded-3xl shadow-2xl hover:shadow-[#d3cbc2]/20 transition-all duration-500">
                   <img
-                    src="/IMG_8806.png"
+                    src="/citedesvents-interieur4.jpg"
                     alt="Événement spécial 3"
                     className="w-full h-56 lg:h-64 object-cover hover:scale-110 transition-transform duration-700"
                   />
                 </div>
                 <div className="overflow-hidden rounded-3xl shadow-2xl hover:shadow-[#d3cbc2]/20 transition-all duration-500">
                   <img
-                    src="/IMG_8807.png"
+                    src="/IMG_8798.png"
                     alt="Événement spécial 4"
                     className="w-full h-72 lg:h-80 object-cover hover:scale-110 transition-transform duration-700"
                   />
