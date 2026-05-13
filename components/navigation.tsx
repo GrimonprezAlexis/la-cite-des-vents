@@ -13,8 +13,12 @@ export function Navigation() {
   const pathname = usePathname();
   const { settings } = useContactSettings();
 
+  const BUSINESS_PHONE = '022 797 10 70';
+  const BUSINESS_PHONE_LINK = '0227971070';
+
   // Format phone for tel: link (remove spaces)
   const phoneLink = settings.phone.replace(/\s/g, '');
+  const showPersonal = phoneLink !== BUSINESS_PHONE_LINK && settings.phone.trim() !== '';
 
   const isActive = (path: string) => pathname === path;
 
@@ -96,22 +100,26 @@ export function Navigation() {
               </div>
               <div className="flex items-center gap-2">
                 <a
-                  href={`tel:${phoneLink}`}
+                  href={`tel:${BUSINESS_PHONE_LINK}`}
                   className={`font-semibold text-base transition-colors duration-300 hover:text-[#d3cbc2] ${
                     isScrolled ? "text-gray-900" : "text-gray-900"
                   }`}
                 >
-                  {settings.phone}
+                  {BUSINESS_PHONE}
                 </a>
-                <span className="text-gray-400 font-bold">•</span>
-                <a
-                  href="tel:0227971070"
-                  className={`font-semibold text-base transition-colors duration-300 hover:text-[#d3cbc2] ${
-                    isScrolled ? "text-gray-900" : "text-gray-900"
-                  }`}
-                >
-                  022 797 10 70
-                </a>
+                {showPersonal && (
+                  <>
+                    <span className="text-gray-400 font-bold">•</span>
+                    <a
+                      href={`tel:${phoneLink}`}
+                      className={`font-semibold text-base transition-colors duration-300 hover:text-[#d3cbc2] ${
+                        isScrolled ? "text-gray-900" : "text-gray-900"
+                      }`}
+                    >
+                      {settings.phone}
+                    </a>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -149,18 +157,22 @@ export function Navigation() {
                   <Phone className="w-4 h-4 flex-shrink-0" />
                   <div className="flex items-center gap-2 flex-wrap">
                     <a
-                      href={`tel:${phoneLink}`}
+                      href={`tel:${BUSINESS_PHONE_LINK}`}
                       className="hover:text-[#d3cbc2] transition-colors duration-300 font-medium"
                     >
-                      {settings.phone}
+                      {BUSINESS_PHONE}
                     </a>
-                    <span className="text-gray-400">•</span>
-                    <a
-                      href="tel:0227971070"
-                      className="hover:text-[#d3cbc2] transition-colors duration-300 font-medium"
-                    >
-                      022 797 10 70
-                    </a>
+                    {showPersonal && (
+                      <>
+                        <span className="text-gray-400">•</span>
+                        <a
+                          href={`tel:${phoneLink}`}
+                          className="hover:text-[#d3cbc2] transition-colors duration-300 font-medium"
+                        >
+                          {settings.phone}
+                        </a>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-start space-x-2 text-gray-600 py-2 px-4">
